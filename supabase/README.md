@@ -10,7 +10,7 @@ O script cria sete disciplinas iniciais. O painel permite cadastrar outras disci
 
 Para um banco já instalado, execute `upgrade-access-and-chapter-layout.sql` no SQL Editor. Esse arquivo adiciona a alocação de disciplinas por aluno e os campos usados no novo formato dos capítulos.
 
-Na guia **Aprovações e disciplinas** do painel, o ano sugere estas disciplinas: 1º ano (Game Design I e Produção Multimídia I), 2º ano (Game Design II e Produção Multimídia III) e 3º ano (Marketing, Game Design III e Produção Multimídia III). Você pode revisar cada aluno individualmente ou filtrar RM, colar uma coluna de e-mails do Excel, selecionar os cadastros encontrados e aplicar o ano em massa. A ação em massa só altera as atribuições de contas existentes; e-mails não encontrados são listados.
+Na guia **Aprovações e disciplinas** do painel, o ano sugere estas disciplinas: 1º ano (Game Design I e Produção Multimídia I), 2º ano (Game Design II e Produção Multimídia II) e 3º ano (Marketing, Game Design III e Produção Multimídia III). Você pode revisar cada aluno individualmente ou filtrar RM, colar uma coluna de e-mails do Excel, selecionar os cadastros encontrados e aplicar o ano em massa. A ação em massa só altera as atribuições de contas existentes; e-mails não encontrados são listados.
 
 No cadastro de capítulos, **Aula** e **Prática guiada** aceitam Markdown. Cada linha de “O essencial” deve seguir o formato `Título | explicação`, uma por linha. As seções com `##` aparecem como títulos; listas numeradas formam as etapas da prática; imagens usam a sintaxe padrão `![descrição](URL)` do Markdown.
 
