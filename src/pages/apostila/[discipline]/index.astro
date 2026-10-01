@@ -100,6 +100,7 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
         <article class="outcome-card"><p class="text-[10px] font-bold uppercase tracking-[.18em] text-accent-light">Na prática</p><h2 class="mt-2 font-display text-xl font-semibold">Habilidades</h2>{subject.skills?.length ? <ul class="mt-4 space-y-2">{subject.skills.map((skill: string) => <li class="flex gap-2 text-sm leading-relaxed"><span class="text-accent-light">↗</span><span>{skill}</span></li>)}</ul> : <p class="mt-4 text-sm leading-relaxed text-text-muted-light dark:text-text-muted-dark">As habilidades serão adicionadas pelo professor.</p>}</article>
         <article class="outcome-card outcome-card-dark"><p class="text-[10px] font-bold uppercase tracking-[.18em] text-highlight-light">Ao final</p><h2 class="mt-2 font-display text-xl font-semibold">Competências</h2>{subject.competencies?.length ? <ul class="mt-4 space-y-2">{subject.competencies.map((competency: string) => <li class="flex gap-2 text-sm leading-relaxed"><span class="text-highlight-light">✳</span><span>{competency}</span></li>)}</ul> : <p class="mt-4 text-sm leading-relaxed text-white/70">As competências serão adicionadas pelo professor.</p>}</article>
       </section>
+      {chapterCount > 0 && <aside class="chapter-sequence-note" role="note"><span aria-hidden="true">ⓘ</span><p><strong>Avance capítulo por capítulo.</strong> O bem-vindo é apenas uma apresentação. Para liberar cada próximo capítulo, abra o atual e marque-o como concluído.</p></aside>}
       {chapterModules.length > 0 && <section class="module-picker" aria-label="Escolha um módulo e capítulo"><div class="flex flex-wrap items-end justify-between gap-3"><div><p class="text-[10px] font-bold uppercase tracking-[.18em] text-accent-light">Por onde começar</p><h2 class="mt-1 font-display text-2xl font-semibold">Escolha um módulo</h2></div><p class="text-xs text-text-muted-light dark:text-text-muted-dark">Abra um módulo para ver seus capítulos.</p></div><div class="mt-4 grid gap-2">{chapterModules.map((module, index) => <details class="module-choice"><summary><span class="module-choice-number">{String(index + 1).padStart(2, '0')}</span><span class="min-w-0 flex-1"><strong>{module.name}</strong><small>{module.lessons.length} capítulos</small></span><span class="module-choice-chevron" aria-hidden="true">⌄</span></summary><div class="module-choice-lessons">{module.lessons.length ? module.lessons.map((lesson: any) => { const unlocked = unlockedLessons.has(lesson.slug); return <a data-select-chapter={unlocked ? '' : undefined} data-locked={!unlocked ? 'true' : undefined} aria-disabled={!unlocked ? 'true' : undefined} class:list={[{ 'chapter-locked': !unlocked }]} href={`#${lesson.slug}`}><span>{unlocked ? String(lesson.lesson_order + 1).padStart(2, '0') : '🔒'}</span><strong>{lesson.title}</strong><span aria-hidden="true">↗</span></a>; }) : <p class="p-4 text-sm text-text-muted-light dark:text-text-muted-dark">Os capítulos deste módulo serão publicados em breve.</p>}</div></details>)}</div></section>}
       </section>
       {chapterModules.map((module, moduleIndex) => <section class="module-content" aria-label={module.name} hidden><div class="module-heading"><span class="text-xs font-bold uppercase tracking-widest text-accent-light">Módulo {String(moduleIndex + 1).padStart(2, '0')}</span><span class="mx-2 h-px w-8 bg-border-light dark:bg-border-dark"></span><span class="text-xs font-bold uppercase tracking-widest">{module.name.replace(/^m[oó]dulo\s+[^:]+:\s*/i, '')}</span></div>
@@ -272,6 +273,7 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
     if (shortcutsPanel) shortcutsPanel.hidden = true;
     if (practiceLink) practiceLink.classList.add('hidden');
     if (completeButton) completeButton.classList.add('hidden');
+    if (completeButton) { completeButton.dataset.lesson = ''; completeButton.dataset.completed = 'false'; }
     if (panelHint) panelHint.hidden = false;
     welcomeNav.classList.add('selected-chapter-link');
     document.querySelectorAll<HTMLAnchorElement>('#chapter-nav a[href^="#"]').forEach((link) => { link.classList.remove('selected-chapter-link'); link.removeAttribute('aria-current'); });
@@ -356,6 +358,9 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
   :global(.dark) .welcome-icon { background:color-mix(in srgb,var(--color-accent-dark) 18%,transparent); color:var(--color-accent-dark); }
   .module-content { padding-top:40px; }
   .learning-outcomes { display:grid; grid-template-columns:minmax(0,1fr); gap:12px; border-bottom:1px solid var(--color-border-light); padding:24px 0 30px; }
+  .chapter-sequence-note { display:flex; align-items:flex-start; gap:12px; margin-top:20px; border:1px solid color-mix(in srgb,var(--color-accent-light) 24%,var(--color-border-light)); border-radius:13px; background:color-mix(in srgb,var(--color-accent-light) 7%,var(--color-surface-light)); padding:15px 17px; color:var(--color-text-muted-light); font-size:.8rem; line-height:1.55; }
+  .chapter-sequence-note > span { display:grid; width:22px; height:22px; flex:none; place-items:center; border-radius:50%; background:color-mix(in srgb,var(--color-accent-light) 14%,transparent); color:var(--color-accent-light); font-weight:800; }
+  .chapter-sequence-note strong { color:var(--color-text-main-light); }
   .description-card { grid-column:auto; }
   .module-picker { padding:28px 0 8px; }
   .module-choice { overflow:hidden; border:1px solid var(--color-border-light); border-radius:13px; background:var(--color-surface-light); transition:border-color .18s,box-shadow .18s; }
@@ -384,6 +389,9 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
   .outcome-card-dark { border-color:#14231e; background:#14231e; color:white; }
   :global(.dark) .outcome-card { border-color:var(--color-border-dark); background:var(--color-surface-dark); color:var(--color-text-main-dark); }
   :global(.dark) .outcome-card-dark { border-color:#14231e; background:#14231e; color:white; }
+  :global(.dark) .chapter-sequence-note { border-color:color-mix(in srgb,var(--color-accent-dark) 28%,var(--color-border-dark)); background:color-mix(in srgb,var(--color-accent-dark) 8%,var(--color-surface-dark)); color:var(--color-text-muted-dark); }
+  :global(.dark) .chapter-sequence-note > span { background:color-mix(in srgb,var(--color-accent-dark) 18%,transparent); color:var(--color-accent-dark); }
+  :global(.dark) .chapter-sequence-note strong { color:var(--color-text-main-dark); }
   .module-heading { display:flex; align-items:center; margin-bottom:16px; }
   .chapter-article { border-top:1px solid var(--color-border-light); padding:26px 0 32px; }
   .chapter-tabs { display:flex; gap:22px; border-bottom:1px solid var(--color-border-light); margin:25px 0 24px; }
