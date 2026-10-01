@@ -1,20 +1,19 @@
 ---
 const { discipline, lesson, completed = false } = Astro.props;
 ---
-<button type="button" class="inline-flex items-center gap-2 rounded-full border border-border-light px-5 py-3 font-semibold transition hover:border-accent-light dark:border-border-dark" data-complete data-discipline={discipline} data-lesson={lesson} data-completed={String(completed)}>
+<button type="button" class="inline-flex items-center gap-2 rounded-full border border-border-light px-5 py-3 font-semibold transition hover:border-accent-light disabled:cursor-default disabled:opacity-70 dark:border-border-dark" data-complete data-discipline={discipline} data-lesson={lesson} data-completed={String(completed)} disabled={completed}>
   <span aria-hidden="true">{completed ? '✓' : '○'}</span><span>{completed ? 'Aula concluída' : 'Marcar como concluída'}</span>
 </button>
 <script>
   document.querySelectorAll<HTMLButtonElement>('[data-complete]').forEach((button) => button.addEventListener('click', async () => {
-    const wasCompleted = button.dataset.completed === 'true';
+    if (button.dataset.completed === 'true') return;
     button.disabled = true;
     try {
-      const response = await fetch('/api/progress', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ discipline_slug: button.dataset.discipline, lesson_slug: button.dataset.lesson, completed: !wasCompleted }) });
+      const response = await fetch('/api/progress', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ discipline_slug: button.dataset.discipline, lesson_slug: button.dataset.lesson, completed: true }) });
       if (!response.ok) throw new Error('Entre na sua conta para salvar seu progresso.');
-      button.dataset.completed = String(!wasCompleted);
-      button.querySelector('span')!.textContent = !wasCompleted ? '✓' : '○';
-      button.querySelectorAll('span')[1]!.textContent = !wasCompleted ? 'Aula concluída' : 'Marcar como concluída';
-    } catch (error) { alert(error instanceof Error ? error.message : 'Não foi possível salvar o progresso.'); }
-    finally { button.disabled = false; }
+      button.dataset.completed = 'true';
+      button.querySelector('span')!.textContent = '✓';
+      button.querySelectorAll('span')[1]!.textContent = 'Aula concluída';
+    } catch (error) { alert(error instanceof Error ? error.message : 'Não foi possível salvar o progresso.'); button.disabled = false; }
   }));
 </script>

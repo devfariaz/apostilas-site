@@ -99,7 +99,6 @@ const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minut
             {lesson.key_idea && <blockquote class="key-idea"><span class="text-5xl font-display leading-none text-accent-light">“</span><p>{lesson.key_idea}</p></blockquote>}
             <article class="prose prose-base mt-7 max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-accent-light dark:prose-invert" set:html={lesson.body_html}></article>
             {lesson.essential_points?.length > 0 && <section class="essential-card"><p class="text-[10px] font-bold uppercase tracking-[.18em] text-accent-light">Hora de memorizar</p><h3 class="mt-2 font-display text-3xl font-semibold">O essencial deste capítulo</h3><ol class="mt-5 grid gap-4 sm:grid-cols-2">{lesson.essential_points.map((point: any, index: number) => <li class="flex gap-3"><span class="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-black/30 text-xs">{index + 1}</span><span><strong class="block text-sm">{point.title}</strong><small class="mt-1 block leading-relaxed">{point.description}</small></span></li>)}</ol></section>}
-            <div class="mt-6"><button type="button" data-complete data-discipline={discipline} data-lesson={lesson.slug} data-completed={String(completedLessons.has(lesson.slug))} class="complete-button"><span>{completedLessons.has(lesson.slug) ? '✓' : '○'}</span><span>{completedLessons.has(lesson.slug) ? 'Aula concluída' : 'Marcar como concluído'}</span></button></div>
           </section>
           <section id={`${lesson.slug}-practice`} role="tabpanel" aria-labelledby={`${lesson.slug}-practice-tab`} data-chapter-panel="practice" hidden>
             {lesson.practice_markdown ? <section class="guided-practice"><p class="text-[10px] font-bold uppercase tracking-[.18em] text-accent-light">Guia de bancada</p><h3 class="mt-2 font-display text-3xl font-semibold">{lesson.shortcuts?.[0]?.label ? `Prática: ${lesson.shortcuts[0].label}` : 'Prática guiada'}</h3><p class="mt-2 text-sm text-text-muted-light dark:text-text-muted-dark">Execute as etapas na ordem indicada e confira o resultado antes de avançar.</p><article class="prose prose-sm mt-6 max-w-none prose-headings:font-display prose-headings:font-semibold prose-blockquote:border-l-highlight-light prose-blockquote:bg-white/60 prose-blockquote:px-4 prose-blockquote:py-1 dark:prose-invert dark:prose-blockquote:bg-black/10" set:html={lesson.practice_html}></article></section> : <div class="practice-empty"><span aria-hidden="true">✳</span><h3>Guia de bancada em preparação</h3><p>O professor ainda não adicionou uma atividade prática para este capítulo.</p></div>}
@@ -107,15 +106,15 @@ const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minut
           {lessonIndex < module.lessons.length - 1 && <a data-select-chapter href={`#${module.lessons[lessonIndex + 1].slug}`} class="next-chapter"><span class="text-[9px] font-bold uppercase tracking-widest">Próximo capítulo</span><strong class="mt-1 block font-display text-lg">{module.lessons[lessonIndex + 1].title}</strong><span aria-hidden="true" class="absolute right-5 top-1/2 -translate-y-1/2 rounded-full border border-white/40 px-3 py-2">›</span></a>}
         </article>)}
       </section>)}
-      {withoutModule.length > 0 && <section class="module-content" hidden><div class="module-heading"><span class="text-xs font-bold uppercase tracking-widest text-accent-light">Conteúdo</span><span class="mx-2 h-px w-8 bg-border-light"></span><span class="text-xs font-bold uppercase tracking-widest">Capítulos</span></div>{withoutModule.map((lesson: any) => <article id={lesson.slug} data-chapter data-lesson={lesson.slug} data-title={lesson.title} class="chapter-article scroll-mt-24" hidden><div class="chapter-title-row"><span>{String(lesson.lesson_order + 1).padStart(2, '0')}</span><h2 data-chapter-title class="font-display text-3xl font-semibold">{lesson.title}</h2></div><div class="chapter-tabs" role="tablist" aria-label={`Conteúdo de ${lesson.title}`}><button type="button" id={`${lesson.slug}-theory-tab`} role="tab" aria-selected="true" aria-controls={`${lesson.slug}-theory`} data-chapter-tab="theory">Teoria</button><button type="button" id={`${lesson.slug}-practice-tab`} role="tab" aria-selected="false" aria-controls={`${lesson.slug}-practice`} data-chapter-tab="practice">Guia de bancada</button></div><section id={`${lesson.slug}-theory`} role="tabpanel" aria-labelledby={`${lesson.slug}-theory-tab`} data-chapter-panel="theory"><article class="prose mt-7 max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-accent-light dark:prose-invert" set:html={lesson.body_html}></article><button type="button" data-complete data-discipline={discipline} data-lesson={lesson.slug} data-completed={String(completedLessons.has(lesson.slug))} class="complete-button mt-6"><span>{completedLessons.has(lesson.slug) ? '✓' : '○'}</span><span>{completedLessons.has(lesson.slug) ? 'Aula concluída' : 'Marcar como concluído'}</span></button></section><section id={`${lesson.slug}-practice`} role="tabpanel" aria-labelledby={`${lesson.slug}-practice-tab`} data-chapter-panel="practice" hidden><div class="practice-empty"><span aria-hidden="true">✳</span><h3>Guia de bancada em preparação</h3><p>O professor ainda não adicionou uma atividade prática para este capítulo.</p></div></section></article>)}</section>}
+      {withoutModule.length > 0 && <section class="module-content" hidden><div class="module-heading"><span class="text-xs font-bold uppercase tracking-widest text-accent-light">Conteúdo</span><span class="mx-2 h-px w-8 bg-border-light"></span><span class="text-xs font-bold uppercase tracking-widest">Capítulos</span></div>{withoutModule.map((lesson: any) => <article id={lesson.slug} data-chapter data-lesson={lesson.slug} data-title={lesson.title} class="chapter-article scroll-mt-24" hidden><div class="chapter-title-row"><span>{String(lesson.lesson_order + 1).padStart(2, '0')}</span><h2 data-chapter-title class="font-display text-3xl font-semibold">{lesson.title}</h2></div><div class="chapter-tabs" role="tablist" aria-label={`Conteúdo de ${lesson.title}`}><button type="button" id={`${lesson.slug}-theory-tab`} role="tab" aria-selected="true" aria-controls={`${lesson.slug}-theory`} data-chapter-tab="theory">Teoria</button><button type="button" id={`${lesson.slug}-practice-tab`} role="tab" aria-selected="false" aria-controls={`${lesson.slug}-practice`} data-chapter-tab="practice">Guia de bancada</button></div><section id={`${lesson.slug}-theory`} role="tabpanel" aria-labelledby={`${lesson.slug}-theory-tab`} data-chapter-panel="theory"><article class="prose mt-7 max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-accent-light dark:prose-invert" set:html={lesson.body_html}></article></section><section id={`${lesson.slug}-practice`} role="tabpanel" aria-labelledby={`${lesson.slug}-practice-tab`} data-chapter-panel="practice" hidden><div class="practice-empty"><span aria-hidden="true">✳</span><h3>Guia de bancada em preparação</h3><p>O professor ainda não adicionou uma atividade prática para este capítulo.</p></div></section></article>)}</section>}
       {chapterCount === 0 && <p class="rounded-2xl border border-dashed border-border-light p-8 text-center text-text-muted-light dark:border-border-dark dark:text-text-muted-dark">Ainda não há capítulos publicados nesta disciplina.</p>}
     </main>
 
-    <aside class="reader-right"><div class="reader-right-inner"><section id="notes-panel" class="note-panel" hidden><div class="flex items-center gap-2"><span aria-hidden="true">▤</span><p class="text-[10px] font-bold uppercase tracking-widest">Minhas notas</p></div><p id="active-chapter-title" class="mt-2 truncate text-xs text-text-muted-light dark:text-text-muted-dark"></p><textarea id="lesson-note" class="note-editor mt-3 min-h-40 w-full resize-y rounded-xl border border-border-light bg-surface-light p-3 text-sm leading-relaxed outline-none transition focus:border-accent-light focus:ring-2 focus:ring-accent-light/15 dark:border-border-dark dark:bg-surface-dark" placeholder="Registre uma ideia, dúvida ou atalho…" disabled></textarea><div class="mt-3 grid gap-2"><p id="note-state" class="text-[10px] text-text-muted-light dark:text-text-muted-dark" aria-live="polite">Suas anotações são privadas.</p><button id="save-note" type="button" class="note-save-button" disabled><span aria-hidden="true">↥</span><span>Salvar minhas notas</span></button></div><p class="mt-2 text-[9px] text-text-muted-light dark:text-text-muted-dark">Salve quando terminar de escrever.</p></section><section id="shortcuts-panel" class="shortcut-panel mt-6 rounded-2xl bg-[#e9e5da] p-4 dark:bg-surface-dark" hidden><p class="text-[9px] font-bold uppercase tracking-widest text-accent-light">Atalhos da aula</p><div id="active-shortcuts" class="mt-3 text-xs text-text-muted-light dark:text-text-muted-dark"></div></section><a id="practice-shortcut" href="#" class="mt-3 hidden items-center gap-3 rounded-xl bg-[#14231e] p-4 text-white"><span class="grid h-8 w-8 place-items-center rounded-full bg-highlight-light text-black">▶</span><span><small class="block text-[8px] uppercase tracking-widest text-white/60">Prática guiada</small><strong class="text-xs">Ir para o exercício</strong></span></a><p id="reader-panel-hint" class="rounded-xl border border-dashed border-border-light p-4 text-xs leading-relaxed text-text-muted-light dark:border-border-dark dark:text-text-muted-dark">Clique em um capítulo no sumário para abrir os atalhos e suas notas pessoais.</p></div></aside>
+    <aside class="reader-right"><div class="reader-right-inner"><section id="notes-panel" class="note-panel" hidden><div class="flex items-center gap-2"><span aria-hidden="true">▤</span><p class="text-[10px] font-bold uppercase tracking-widest">Minhas notas</p></div><p id="active-chapter-title" class="mt-2 truncate text-xs text-text-muted-light dark:text-text-muted-dark"></p><textarea id="lesson-note" class="note-editor mt-3 min-h-40 w-full resize-y rounded-xl border border-border-light bg-surface-light p-3 text-sm leading-relaxed outline-none transition focus:border-accent-light focus:ring-2 focus:ring-accent-light/15 dark:border-border-dark dark:bg-surface-dark" placeholder="Registre uma ideia, dúvida ou atalho…" disabled></textarea><div class="mt-3 grid gap-2"><p id="note-state" class="text-[10px] text-text-muted-light dark:text-text-muted-dark" aria-live="polite">Suas anotações são privadas.</p><button id="save-note" type="button" class="note-save-button" disabled><span aria-hidden="true">↥</span><span>Salvar minhas notas</span></button></div><p class="mt-2 text-[9px] text-text-muted-light dark:text-text-muted-dark">Salve quando terminar de escrever.</p></section><section id="shortcuts-panel" class="shortcut-panel mt-6 rounded-2xl bg-[#e9e5da] p-4 dark:bg-surface-dark" hidden><p class="text-[9px] font-bold uppercase tracking-widest text-accent-light">Atalhos da aula</p><div id="active-shortcuts" class="mt-3 text-xs text-text-muted-light dark:text-text-muted-dark"></div></section><a id="practice-shortcut" href="#" class="mt-3 hidden items-center gap-3 rounded-xl bg-[#14231e] p-4 text-white"><span class="grid h-8 w-8 place-items-center rounded-full bg-highlight-light text-black">▶</span><span><small class="block text-[8px] uppercase tracking-widest text-white/60">Prática guiada</small><strong class="text-xs">Ir para o exercício</strong></span></a><button id="complete-chapter" type="button" data-complete data-discipline={discipline} data-lesson="" data-completed="false" class="complete-button mt-3 hidden"><span aria-hidden="true">○</span><span>Marcar como concluída</span></button><p id="reader-panel-hint" class="rounded-xl border border-dashed border-border-light p-4 text-xs leading-relaxed text-text-muted-light dark:border-border-dark dark:text-text-muted-dark">Clique em um capítulo no sumário para abrir os atalhos e suas notas pessoais.</p></div></aside>
   </div>
 </BaseLayout>
 
-<script type="application/json" id="chapter-data" set:html={JSON.stringify({ discipline, chapters: lessons.map((lesson) => ({ slug: lesson.slug, shortcuts: lesson.shortcuts ?? (lesson.shortcut_keys ? [{ keys: lesson.shortcut_keys, label: lesson.shortcut_label }] : []), hasPractice: Boolean(lesson.practice_markdown) })) }).replace(/</g, '\\u003c')}></script>
+<script type="application/json" id="chapter-data" set:html={JSON.stringify({ discipline, chapters: lessons.map((lesson) => ({ slug: lesson.slug, shortcuts: lesson.shortcuts ?? (lesson.shortcut_keys ? [{ keys: lesson.shortcut_keys, label: lesson.shortcut_label }] : []), hasPractice: Boolean(lesson.practice_markdown), completed: completedLessons.has(lesson.slug) })) }).replace(/</g, '\\u003c')}></script>
 <script>
   const pageData = JSON.parse(document.querySelector('#chapter-data')?.textContent ?? '{"discipline":"","chapters":[]}');
   const { discipline, chapters: chapterData } = pageData;
@@ -129,6 +128,7 @@ const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minut
   const shortcutsPanel = document.querySelector<HTMLElement>('#shortcuts-panel');
   const panelHint = document.querySelector<HTMLElement>('#reader-panel-hint');
   const practiceLink = document.querySelector<HTMLAnchorElement>('#practice-shortcut');
+  const completeButton = document.querySelector<HTMLButtonElement>('#complete-chapter');
   const welcomeNav = document.querySelector<HTMLAnchorElement>('#welcome-nav');
   const welcomePage = document.querySelector<HTMLElement>('#bem-vindo');
   const chapterBySlug = new Map(chapterData.map((item) => [item.slug, item]));
@@ -162,6 +162,15 @@ const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minut
     });
     if (activeTitle) activeTitle.textContent = chapter.dataset.title ?? 'Minhas notas';
     const details = chapterBySlug.get(slug);
+    if (completeButton) {
+      const completed = Boolean(details?.completed);
+      completeButton.dataset.lesson = slug;
+      completeButton.dataset.completed = String(completed);
+      completeButton.disabled = completed;
+      completeButton.classList.remove('hidden');
+      completeButton.querySelector('span')!.textContent = completed ? '✓' : '○';
+      completeButton.querySelectorAll('span')[1]!.textContent = completed ? 'Aula concluída' : 'Marcar como concluída';
+    }
     if (shortcutList) {
       shortcutList.replaceChildren();
       if (details?.shortcuts.length) details.shortcuts.forEach((shortcut) => {
@@ -224,6 +233,7 @@ const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minut
     if (notePanel) notePanel.hidden = true;
     if (shortcutsPanel) shortcutsPanel.hidden = true;
     if (practiceLink) practiceLink.classList.add('hidden');
+    if (completeButton) completeButton.classList.add('hidden');
     if (panelHint) panelHint.hidden = false;
     welcomeNav.classList.add('selected-chapter-link');
     document.querySelectorAll<HTMLAnchorElement>('#chapter-nav a[href^="#"]').forEach((link) => { link.classList.remove('selected-chapter-link'); link.removeAttribute('aria-current'); });
@@ -259,12 +269,22 @@ const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minut
     document.querySelectorAll<HTMLElement>('[data-search-item]').forEach((item) => { item.hidden = !item.dataset.searchText?.toLocaleLowerCase('pt-BR').includes(value); });
     document.querySelectorAll<HTMLDetailsElement>('.module-group').forEach((group) => { const hasMatch = [...group.querySelectorAll<HTMLElement>('[data-search-item]')].some((item) => !item.hidden); if (value && hasMatch) group.open = true; group.hidden = Boolean(value) && !hasMatch; });
   });
-  document.querySelectorAll<HTMLButtonElement>('[data-complete]').forEach((button) => button.addEventListener('click', async () => {
-    const wasCompleted = button.dataset.completed === 'true'; button.disabled = true;
-    try { const response = await fetch('/api/progress', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ discipline_slug: button.dataset.discipline, lesson_slug: button.dataset.lesson, completed: !wasCompleted }) }); if (!response.ok) throw new Error('Entre na sua conta para salvar seu progresso.'); button.dataset.completed = String(!wasCompleted); button.querySelectorAll('span')[0].textContent = !wasCompleted ? '✓' : '○'; button.querySelectorAll('span')[1].textContent = !wasCompleted ? 'Aula concluída' : 'Marcar como concluído'; }
-    catch (error) { alert(error instanceof Error ? error.message : 'Não foi possível salvar o progresso.'); }
-    finally { button.disabled = false; }
-  }));
+  completeButton?.addEventListener('click', async () => {
+    if (!completeButton.dataset.lesson || completeButton.dataset.completed === 'true') return;
+    completeButton.disabled = true;
+    try {
+      const response = await fetch('/api/progress', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ discipline_slug: completeButton.dataset.discipline, lesson_slug: completeButton.dataset.lesson, completed: true }) });
+      if (!response.ok) throw new Error('Entre na sua conta para salvar seu progresso.');
+      completeButton.dataset.completed = 'true';
+      completeButton.querySelector('span')!.textContent = '✓';
+      completeButton.querySelectorAll('span')[1]!.textContent = 'Aula concluída';
+      const chapter = chapters.find((item) => item.dataset.lesson === completeButton.dataset.lesson);
+      if (chapter) { const details = chapterBySlug.get(completeButton.dataset.lesson); if (details) details.completed = true; }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Não foi possível salvar o progresso.');
+      completeButton.disabled = false;
+    }
+  });
 </script>
 
 <style>
@@ -356,8 +376,43 @@ const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minut
   .shortcut-panel { border:1px solid color-mix(in srgb,var(--color-highlight-light) 45%,var(--color-border-light)); }
   @keyframes panel-in { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
   #chapter-nav [hidden] { display:none; }
-  @media (max-width:1100px) { .reader-shell { grid-template-columns: minmax(170px,210px) minmax(0,700px); } .reader-right { display:none; } .discipline-hero { margin-right:-24px; } }
-  @media (max-width:720px) { .reader-shell { display:block; padding:0 18px 56px; } .reader-left { position:sticky; top:64px; z-index:10; border:0; padding:10px 0; background:var(--color-bg-light); } :global(.dark) .reader-left { background:var(--color-bg-dark); } .reader-left-inner { position:static; max-height:none; overflow:visible; } #chapter-nav { display:none; position:absolute; top:100%; left:0; right:0; max-height:55vh; overflow:auto; border:1px solid var(--color-border-light); border-radius:12px; background:var(--color-bg-light); padding:12px; box-shadow:0 10px 24px #0002; } .reader-left:focus-within #chapter-nav { display:block; } .reader-left-inner > blockquote { display:none; } .discipline-hero { margin:0 -18px; padding:34px 18px 26px; } .discipline-hero h1 { font-size:2.7rem; } .learning-outcomes { grid-template-columns:1fr; } .chapter-article { padding:22px 0 26px; } }
+  @media (max-width:1100px) {
+    .reader-shell { grid-template-columns:minmax(165px,205px) minmax(0,1fr); gap:clamp(16px,2.5vw,28px); padding-inline:clamp(16px,3vw,28px); }
+    .reader-right { display:block; grid-column:2; border:0; border-top:1px solid var(--color-border-light); padding:20px 0 24px; }
+    .reader-right-inner { position:static; display:grid; grid-template-columns:minmax(0,1fr); gap:12px; max-height:none; overflow:visible; }
+    #notes-panel,#reader-panel-hint { grid-column:auto; }
+    .reader-right-inner > .shortcut-panel,.reader-right-inner > #practice-shortcut,.reader-right-inner > #complete-chapter { margin-top:0; }
+    .discipline-hero { margin-right:-24px; }
+  }
+  @media (max-width:720px) {
+    .reader-shell { display:block; padding:0 18px 48px; }
+    .reader-left { position:sticky; top:100px; z-index:10; border:0; padding:10px 0; background:var(--color-bg-light); }
+    :global(.dark) .reader-left { background:var(--color-bg-dark); }
+    .reader-left-inner { position:static; max-height:none; overflow:visible; }
+    #chapter-nav { display:none; position:absolute; top:100%; left:0; right:0; max-height:55vh; overflow:auto; border:1px solid var(--color-border-light); border-radius:12px; background:var(--color-bg-light); padding:12px; box-shadow:0 10px 24px #0002; }
+    :global(.dark) #chapter-nav { border-color:var(--color-border-dark); background:var(--color-bg-dark); }
+    .reader-left:focus-within #chapter-nav { display:block; }
+    .reader-left-inner > blockquote { display:none; }
+    .discipline-hero { margin:0 -18px; padding:30px 18px 24px; }
+    .discipline-hero h1 { font-size:clamp(2rem,9vw,2.7rem); line-height:1.06; overflow-wrap:anywhere; }
+    .learning-outcomes { grid-template-columns:1fr; }
+    .chapter-article { padding:20px 0 24px; }
+    .chapter-title-row { grid-template-columns:28px minmax(0,1fr); gap:9px; }
+    .chapter-tabs { gap:16px; }
+    .reader-right { margin-top:8px; }
+    .note-editor { min-height:120px; }
+    .next-chapter { padding:16px 50px 16px 16px; }
+  }
+  @media (max-width:420px) {
+    .reader-shell { padding-inline:14px; }
+    .discipline-hero { margin-inline:-14px; padding-inline:14px; }
+    .welcome-label { max-width:100%; }
+    .module-choice > summary { gap:9px; padding:12px; }
+    .module-choice summary strong { font-size:12px; }
+    .module-choice-lessons { padding-inline:6px; }
+    .module-choice-lessons a { gap:8px; padding-inline:7px; }
+    .key-idea,.guided-practice,.essential-card { padding:16px; }
+  }
   :global(.dark) .reader-left { border-color:var(--color-border-dark); }
   :global(.dark) .reader-right { border-color:var(--color-border-dark); }
   :global(.dark) .chapter-article { border-color:var(--color-border-dark); }

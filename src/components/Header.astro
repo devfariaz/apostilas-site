@@ -4,6 +4,8 @@ import LogoMark from './LogoMark.astro';
 import { disciplines } from '../lib/catalog';
 import { createSupabaseServerClient } from '../lib/supabase';
 const { user } = Astro.props;
+const displayName = user?.user_metadata?.full_name || user?.email || 'Conta';
+const userInitials = String(displayName).split(/\s+/).slice(0, 2).map((part: string) => part[0]?.toLocaleUpperCase('pt-BR')).join('');
 let subjects: { slug: string; name: string; description?: string | null }[] = [...disciplines];
 let isAdmin = false;
 let hasSession = Boolean(user);
@@ -29,10 +31,9 @@ const yearGroups = [
   { label: '3º ano', subjects: subjects.filter((item) => /(?:^|[-\s])iii$/i.test(item.slug) || /\bIII$/i.test(item.name) || /marketing/i.test(item.name)) },
 ];
 ---
-<header class="sticky top-0 z-30 border-b border-border-light bg-bg-light/90 backdrop-blur dark:border-border-dark dark:bg-bg-dark/90">
-  <div class="mx-auto flex max-w-[1440px] items-center gap-8 px-5 py-3 lg:px-8">
-    <a href="/" class="flex shrink-0 items-center gap-3 font-display tracking-tight" aria-label="Professor Deivid Nobre - Apostilas"><span class="grid h-10 w-10 place-items-center rounded-xl bg-accent-light p-1.5"><LogoMark class="h-8 w-8 text-white" /></span><span class="flex flex-col text-base font-bold leading-tight sm:text-lg">Professor Deivid Nobre<span class="text-xs font-medium text-text-muted-light dark:text-text-muted-dark">Apostilas</span></span></a>
-    <nav class="hidden flex-1 items-center gap-2 text-sm text-text-muted-light lg:flex dark:text-text-muted-dark" aria-label="Disciplinas por ano">
+<header class="site-header sticky top-0 z-30 border-b border-border-light bg-bg-light/90 backdrop-blur dark:border-border-dark dark:bg-bg-dark/90">
+  <div class="header-main mx-auto grid max-w-[1440px] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-5 lg:px-8">
+    <nav class="year-nav desktop-year-nav col-start-1 hidden min-w-0 items-center gap-1 text-sm text-text-muted-light lg:flex dark:text-text-muted-dark" aria-label="Disciplinas por ano">
       {yearGroups.map((group) => group.subjects.length > 0 && <details class="year-nav-group relative">
         <summary class="flex cursor-pointer list-none items-center gap-2 rounded-full px-3 py-2 font-semibold transition hover:bg-black/5 hover:text-accent-light dark:hover:bg-white/10">{group.label}<span class="year-nav-chevron" aria-hidden="true">⌄</span></summary>
         <div class="year-nav-menu absolute left-0 top-full z-40 mt-2 min-w-60 rounded-2xl border border-border-light bg-surface-light p-2 shadow-xl dark:border-border-dark dark:bg-surface-dark">
@@ -40,11 +41,19 @@ const yearGroups = [
         </div>
       </details>)}
     </nav>
-    <form action="/buscar" method="get" class="hidden w-72 shrink-0 items-center gap-2 rounded-full border border-border-light bg-surface-light px-4 py-2.5 transition focus-within:border-accent-light focus-within:ring-2 focus-within:ring-accent-light/15 md:flex xl:w-96 dark:border-border-dark dark:bg-surface-dark"><span aria-hidden="true" class="text-lg leading-none text-text-muted-light">⌕</span><input aria-label="Buscar apostilas por assunto ou tag" name="q" class="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-text-muted-light" placeholder="Buscar na apostila" /><kbd class="rounded border border-border-light px-1.5 text-[10px] text-text-muted-light dark:border-border-dark">↵</kbd></form>
-    <div class="ml-auto flex items-center gap-2"><a href="/buscar" class="rounded-full p-2 text-sm hover:bg-black/5 md:hidden dark:hover:bg-white/10" aria-label="Buscar">⌕</a><ThemeToggle />
-      {user ? <details class="relative"><summary class="max-w-40 cursor-pointer list-none truncate rounded-full px-4 py-2 text-sm hover:bg-black/5 dark:hover:bg-white/10">{user.user_metadata?.full_name || user.email}</summary><div class="absolute right-0 mt-2 w-52 rounded-2xl border border-border-light bg-surface-light p-3 shadow-xl dark:border-border-dark dark:bg-surface-dark"><p class="truncate px-2 py-1 text-xs text-text-muted-light dark:text-text-muted-dark">{user.email}</p>{isAdmin && <a href="/admin" class="block rounded-xl px-2 py-2 text-sm hover:bg-black/5 dark:hover:bg-white/10">Painel administrativo</a>}<form action="/api/auth/logout" method="post"><button class="mt-2 w-full rounded-xl px-2 py-2 text-left text-sm hover:bg-black/5 dark:hover:bg-white/10">Sair da conta</button></form></div></details> : <a class="rounded-full bg-accent-light px-4 py-2 text-sm font-semibold text-white hover:opacity-90" href="/login">Entrar</a>}
+    <a href="/" class="brand-link col-start-2 row-start-1 flex min-w-0 items-center justify-self-center gap-2 font-display tracking-tight" aria-label="Professor Deivid Nobre - Apostilas"><span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-light p-1.5"><LogoMark class="h-8 w-8 text-white" /></span><span class="brand-name flex flex-col text-sm font-bold leading-tight sm:text-base">Professor Deivid Nobre<span class="brand-subtitle text-xs font-medium text-text-muted-light dark:text-text-muted-dark">Apostilas</span></span></a>
+    <div class="header-tools col-start-3 row-start-1 flex min-w-0 items-center justify-self-end gap-1.5 sm:gap-2"><form action="/buscar" method="get" class="hidden w-56 shrink items-center gap-2 rounded-full border border-border-light bg-surface-light px-3 py-2.5 transition focus-within:border-accent-light focus-within:ring-2 focus-within:ring-accent-light/15 md:flex xl:w-96 dark:border-border-dark dark:bg-surface-dark"><span aria-hidden="true" class="text-lg leading-none text-text-muted-light">⌕</span><input aria-label="Buscar apostilas por assunto ou tag" name="q" class="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-text-muted-light" placeholder="Buscar na apostila" /><kbd class="rounded border border-border-light px-1.5 text-[10px] text-text-muted-light dark:border-border-dark dark:text-text-muted-dark">↵</kbd></form><a href="/buscar" class="search-shortcut rounded-full p-2 text-sm hover:bg-black/5 md:hidden dark:hover:bg-white/10" aria-label="Buscar">⌕</a><ThemeToggle />
+      {user ? <details class="profile-menu relative"><summary aria-label={displayName} class="flex max-w-40 cursor-pointer list-none items-center gap-2 rounded-full p-1.5 text-sm hover:bg-black/5 dark:hover:bg-white/10"><span class="profile-initials grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent-light text-xs font-bold text-white sm:hidden">{userInitials}</span><span class="hidden max-w-32 truncate px-2 sm:inline">{displayName}</span></summary><div class="absolute right-0 mt-2 w-52 rounded-2xl border border-border-light bg-surface-light p-3 shadow-xl dark:border-border-dark dark:bg-surface-dark"><p class="truncate px-2 py-1 text-xs text-text-muted-light dark:text-text-muted-dark">{user.email}</p>{isAdmin && <a href="/admin" class="block rounded-xl px-2 py-2 text-sm hover:bg-black/5 dark:hover:bg-white/10">Painel administrativo</a>}<form action="/api/auth/logout" method="post"><button class="mt-2 w-full rounded-xl px-2 py-2 text-left text-sm hover:bg-black/5 dark:hover:bg-white/10">Sair da conta</button></form></div></details> : <a class="rounded-full bg-accent-light px-3 py-2 text-sm font-semibold text-white hover:opacity-90 sm:px-4" href="/login">Entrar</a>}
     </div>
   </div>
+  <nav class="year-nav mobile-year-nav mx-auto flex max-w-[1440px] items-center justify-center gap-1 px-3 pb-2 text-xs text-text-muted-light sm:gap-2 sm:px-5 lg:hidden dark:text-text-muted-dark" aria-label="Disciplinas por ano">
+    {yearGroups.map((group) => group.subjects.length > 0 && <details class="year-nav-group relative">
+      <summary class="flex cursor-pointer list-none items-center gap-1 rounded-full px-3 py-1.5 font-semibold transition hover:bg-black/5 hover:text-accent-light dark:hover:bg-white/10">{group.label}<span class="year-nav-chevron" aria-hidden="true">⌄</span></summary>
+      <div class="year-nav-menu absolute left-0 top-full z-40 mt-2 min-w-60 rounded-2xl border border-border-light bg-surface-light p-2 text-sm shadow-xl dark:border-border-dark dark:bg-surface-dark">
+        {group.subjects.map((item) => <a class="block rounded-xl px-3 py-2.5 transition hover:bg-black/5 hover:text-accent-light dark:hover:bg-white/10" href={`/apostila/${item.slug}`}><span class="block font-semibold text-text-main-light dark:text-text-main-dark">{item.name}</span>{item.description && <span class="mt-0.5 block text-xs text-text-muted-light dark:text-text-muted-dark">{item.description}</span>}</a>)}
+      </div>
+    </details>)}
+  </nav>
 </header>
 
 <script>
@@ -58,9 +67,13 @@ const yearGroups = [
 </script>
 
 <style>
+  .header-main { min-height:64px; }
+  .brand-link { text-align:left; }
   .year-nav-group > summary::-webkit-details-marker { display:none; }
   .year-nav-chevron { font-size:11px; transition:transform .18s; }
   .year-nav-group[open] .year-nav-chevron { transform:rotate(180deg); }
   .year-nav-menu { animation:year-menu-in .14s ease-out; }
   @keyframes year-menu-in { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+  @media (max-width:520px) { .brand-name { display:none; } .header-main { gap:0; padding-inline:10px; } .header-tools { gap:2px; } }
+  @media (min-width:1024px) { .mobile-year-nav { display:none; } }
 </style>
