@@ -11,21 +11,31 @@ let subject: any = disciplines.find((item) => item.slug === discipline) ?? null;
 let modules: any[] = [];
 let lessons: any[] = [];
 let completedLessons = new Set<string>();
+let isAdmin = false;
 try {
   const supabase = createSupabaseServerClient(Astro.cookies, Astro.request);
   const { data: auth } = await supabase.auth.getUser(); user = auth.user;
-  const [d, m, l, p] = await Promise.all([
+  const [d, m, l, p, profile] = await Promise.all([
     supabase.from('disciplines').select('*').eq('slug', discipline).eq('active', true).maybeSingle(),
     supabase.from('modules').select('*').eq('discipline_slug', discipline).order('sort_order'),
     supabase.from('apostilas').select('*').eq('discipline_slug', discipline).eq('published', true).order('lesson_order'),
-    user ? supabase.from('lesson_progress').select('lesson_slug').eq('user_id', user.id).eq('disciplina_slug', discipline) : Promise.resolve({ data: [] })
+    user ? supabase.from('lesson_progress').select('lesson_slug').eq('user_id', user.id).eq('disciplina_slug', discipline) : Promise.resolve({ data: [] }),
+    user ? supabase.from('profiles').select('role').eq('id', user.id).maybeSingle() : Promise.resolve({ data: null })
   ]);
   if (d.data) subject = d.data;
   modules = m.data ?? [];
   lessons = l.data ?? [];
   completedLessons = new Set((p.data ?? []).map((row: any) => row.lesson_slug));
+  isAdmin = profile.data?.role === 'admin';
 } catch { /* A navegação permanece acessível e informa quando não há conteúdo publicado. */ }
 if (!subject) return Astro.redirect('/');
+const lessonsByOrder = [...lessons].sort((a, b) => a.lesson_order - b.lesson_order || a.title.localeCompare(b.title, 'pt-BR'));
+const unlockedLessons = new Set<string>();
+let reachedFirstIncomplete = false;
+for (const lesson of lessonsByOrder) {
+  if (isAdmin || !reachedFirstIncomplete) unlockedLessons.add(lesson.slug);
+  if (!completedLessons.has(lesson.slug)) reachedFirstIncomplete = true;
+}
 const chapterModules = modules.map((module) => ({ ...module, lessons: lessons.filter((lesson) => lesson.module_id === module.id || lesson.module === module.name) }));
 const withoutModule = lessons.filter((lesson) => !lesson.module_id && !modules.some((module) => module.name === lesson.module));
 const renderMarkdown = async (markdown: string) => sanitizeHtml(await marked.parse(markdown ?? ''));
@@ -66,6 +76,7 @@ for (let i = 0; i < withoutModule.length; i++) {
 }
 const chapterCount = lessons.length;
 const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minutes ?? 10), 0);
+const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
 ---
 <BaseLayout title={`${subject.name} — Professor Deivid Nobre - Apostilas`} description={subject.description} user={user}>
   <div class="reader-shell">
@@ -74,13 +85,14 @@ const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minut
       <label class="relative block"><span class="sr-only">Encontrar capítulo neste módulo</span><span aria-hidden="true" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light">⌕</span><input id="chapter-filter" class="w-full rounded-lg border border-border-light bg-surface-light py-2 pl-9 pr-3 text-xs outline-none focus:border-accent-light dark:border-border-dark dark:bg-surface-dark" placeholder="Encontrar capítulo" /></label>
       <nav id="chapter-nav" class="mt-5 space-y-4" aria-label="Módulos e capítulos">
         <a id="welcome-nav" href="#bem-vindo" class="welcome-nav-link"><span class="welcome-nav-icon">✳</span><span><strong>Bem-vindo</strong><small>Sobre esta disciplina</small></span></a>
-        {chapterModules.map((module, index) => <details class="module-group"><summary class="flex cursor-pointer list-none items-start gap-2 border-b border-border-light pb-3 dark:border-border-dark"><span class="font-display text-lg text-accent-light">{String(index + 1).padStart(2, '0')}</span><span class="min-w-0 flex-1"><strong class="block text-xs">{module.name}</strong><small class="text-[10px] text-text-muted-light dark:text-text-muted-dark">{module.lessons.length} capítulos</small></span><span aria-hidden="true" class="text-text-muted-light">⌄</span></summary><ul class="ml-3 mt-2 space-y-1 border-l border-border-light pl-2 dark:border-border-dark">{module.lessons.map((lesson: any) => <li data-search-item data-search-text={`${lesson.title} ${module.name} ${(lesson.tags ?? []).join(' ')}`}><a data-select-chapter class="flex items-start gap-2 rounded-md px-2 py-2 text-[11px] leading-snug text-text-muted-light hover:bg-black/5 hover:text-accent-light dark:text-text-muted-dark dark:hover:bg-white/5" href={`#${lesson.slug}`}><span class="w-4 shrink-0 font-mono text-[9px]">{completedLessons.has(lesson.slug) ? '✓' : String(lesson.lesson_order + 1).padStart(2, '0')}</span><span>{lesson.title}</span></a></li>)}</ul></details>)}
-        {withoutModule.length > 0 && <details class="module-group"><summary class="flex cursor-pointer list-none items-start gap-2 border-b border-border-light pb-3 dark:border-border-dark"><span class="font-display text-lg text-accent-light">{String(chapterModules.length + 1).padStart(2, '0')}</span><span class="min-w-0 flex-1"><strong class="block text-xs">Capítulos</strong><small class="text-[10px] text-text-muted-light dark:text-text-muted-dark">{withoutModule.length} capítulos</small></span></summary><ul class="ml-3 mt-2 space-y-1 border-l border-border-light pl-2 dark:border-border-dark">{withoutModule.map((lesson: any) => <li data-search-item data-search-text={`${lesson.title} ${(lesson.tags ?? []).join(' ')}`}><a data-select-chapter class="flex gap-2 rounded-md px-2 py-2 text-[11px] text-text-muted-light hover:text-accent-light dark:text-text-muted-dark" href={`#${lesson.slug}`}><span class="font-mono text-[9px]">{String(lesson.lesson_order + 1).padStart(2, '0')}</span>{lesson.title}</a></li>)}</ul></details>}
+        {chapterModules.map((module, index) => <details class="module-group"><summary class="flex cursor-pointer list-none items-start gap-2 border-b border-border-light pb-3 dark:border-border-dark"><span class="font-display text-lg text-accent-light">{String(index + 1).padStart(2, '0')}</span><span class="min-w-0 flex-1"><strong class="block text-xs">{module.name}</strong><small class="text-[10px] text-text-muted-light dark:text-text-muted-dark">{module.lessons.length} capítulos</small></span><span aria-hidden="true" class="text-text-muted-light">⌄</span></summary><ul class="ml-3 mt-2 space-y-1 border-l border-border-light pl-2 dark:border-border-dark">{module.lessons.map((lesson: any) => { const unlocked = unlockedLessons.has(lesson.slug); return <li data-search-item data-search-text={`${lesson.title} ${module.name} ${(lesson.tags ?? []).join(' ')}`}><a data-select-chapter={unlocked ? '' : undefined} data-locked={!unlocked ? 'true' : undefined} aria-disabled={!unlocked ? 'true' : undefined} class:list={["flex items-start gap-2 rounded-md px-2 py-2 text-[11px] leading-snug text-text-muted-light hover:bg-black/5 hover:text-accent-light dark:text-text-muted-dark dark:hover:bg-white/5", { 'chapter-locked': !unlocked }]} href={`#${lesson.slug}`}><span class="w-4 shrink-0 font-mono text-[9px]">{completedLessons.has(lesson.slug) ? '✓' : unlocked ? String(lesson.lesson_order + 1).padStart(2, '0') : '🔒'}</span><span>{lesson.title}</span></a></li>; })}</ul></details>)}
+        {withoutModule.length > 0 && <details class="module-group"><summary class="flex cursor-pointer list-none items-start gap-2 border-b border-border-light pb-3 dark:border-border-dark"><span class="font-display text-lg text-accent-light">{String(chapterModules.length + 1).padStart(2, '0')}</span><span class="min-w-0 flex-1"><strong class="block text-xs">Capítulos</strong><small class="text-[10px] text-text-muted-light dark:text-text-muted-dark">{withoutModule.length} capítulos</small></span></summary><ul class="ml-3 mt-2 space-y-1 border-l border-border-light pl-2 dark:border-border-dark">{withoutModule.map((lesson: any) => { const unlocked = unlockedLessons.has(lesson.slug); return <li data-search-item data-search-text={`${lesson.title} ${(lesson.tags ?? []).join(' ')}`}><a data-select-chapter={unlocked ? '' : undefined} data-locked={!unlocked ? 'true' : undefined} aria-disabled={!unlocked ? 'true' : undefined} class:list={["flex gap-2 rounded-md px-2 py-2 text-[11px] text-text-muted-light hover:text-accent-light dark:text-text-muted-dark", { 'chapter-locked': !unlocked }]} href={`#${lesson.slug}`}><span class="font-mono text-[9px]">{unlocked ? String(lesson.lesson_order + 1).padStart(2, '0') : '🔒'}</span>{lesson.title}</a></li>; })}</ul></details>}
       </nav>
       <blockquote class="mt-7 rounded-xl bg-[#14231e] p-4 text-white"><span class="text-highlight-light">✳</span><p class="mt-2 font-display text-sm leading-relaxed">“Aprenda um capítulo de cada vez. Cada ideia abre caminho para a próxima.”</p><cite class="mt-2 block text-[9px] text-white/60">Seu percurso de aprendizagem</cite></blockquote>
     </div></aside>
 
     <main class="reader-main">
+      {chapterAccessNotice && <p role="status" class="mb-5 rounded-xl border border-highlight-light/50 bg-highlight-light/20 px-4 py-3 text-sm leading-relaxed dark:border-highlight-dark/50 dark:bg-highlight-dark/10">Conclua os capítulos na ordem para liberar os próximos conteúdos.</p>}
       <section id="bem-vindo" class="welcome-page scroll-mt-24" aria-label={`Bem-vindo à disciplina ${subject.name}`}>
       <header class="discipline-hero"><div class="welcome-label"><span class="welcome-icon">✳</span><span><small>APOSTILA DIGITAL</small><strong>Bem-vindo à disciplina</strong></span></div><h1 class="mt-4 font-display text-5xl font-semibold leading-[1.05] tracking-tight md:text-6xl">{subject.name}</h1><div class="mt-7 flex flex-wrap gap-4 text-[10px] font-semibold uppercase tracking-widest text-text-muted-light dark:text-text-muted-dark"><span><strong class="text-accent-light">{String(chapterCount).padStart(2, '0')}</strong> capítulos</span><span>{totalMinutes} min de leitura</span><span>Material de estudo</span></div></header>
       <section class="learning-outcomes" aria-label="Sobre a disciplina">
@@ -88,10 +100,11 @@ const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minut
         <article class="outcome-card"><p class="text-[10px] font-bold uppercase tracking-[.18em] text-accent-light">Na prática</p><h2 class="mt-2 font-display text-xl font-semibold">Habilidades</h2>{subject.skills?.length ? <ul class="mt-4 space-y-2">{subject.skills.map((skill: string) => <li class="flex gap-2 text-sm leading-relaxed"><span class="text-accent-light">↗</span><span>{skill}</span></li>)}</ul> : <p class="mt-4 text-sm leading-relaxed text-text-muted-light dark:text-text-muted-dark">As habilidades serão adicionadas pelo professor.</p>}</article>
         <article class="outcome-card outcome-card-dark"><p class="text-[10px] font-bold uppercase tracking-[.18em] text-highlight-light">Ao final</p><h2 class="mt-2 font-display text-xl font-semibold">Competências</h2>{subject.competencies?.length ? <ul class="mt-4 space-y-2">{subject.competencies.map((competency: string) => <li class="flex gap-2 text-sm leading-relaxed"><span class="text-highlight-light">✳</span><span>{competency}</span></li>)}</ul> : <p class="mt-4 text-sm leading-relaxed text-white/70">As competências serão adicionadas pelo professor.</p>}</article>
       </section>
-      {chapterModules.length > 0 && <section class="module-picker" aria-label="Escolha um módulo e capítulo"><div class="flex flex-wrap items-end justify-between gap-3"><div><p class="text-[10px] font-bold uppercase tracking-[.18em] text-accent-light">Por onde começar</p><h2 class="mt-1 font-display text-2xl font-semibold">Escolha um módulo</h2></div><p class="text-xs text-text-muted-light dark:text-text-muted-dark">Abra um módulo para ver seus capítulos.</p></div><div class="mt-4 grid gap-2">{chapterModules.map((module, index) => <details class="module-choice"><summary><span class="module-choice-number">{String(index + 1).padStart(2, '0')}</span><span class="min-w-0 flex-1"><strong>{module.name}</strong><small>{module.lessons.length} capítulos</small></span><span class="module-choice-chevron" aria-hidden="true">⌄</span></summary><div class="module-choice-lessons">{module.lessons.length ? module.lessons.map((lesson: any) => <a data-select-chapter href={`#${lesson.slug}`}><span>{String(lesson.lesson_order + 1).padStart(2, '0')}</span><strong>{lesson.title}</strong><span aria-hidden="true">↗</span></a>) : <p class="p-4 text-sm text-text-muted-light dark:text-text-muted-dark">Os capítulos deste módulo serão publicados em breve.</p>}</div></details>)}</div></section>}
+      {chapterModules.length > 0 && <section class="module-picker" aria-label="Escolha um módulo e capítulo"><div class="flex flex-wrap items-end justify-between gap-3"><div><p class="text-[10px] font-bold uppercase tracking-[.18em] text-accent-light">Por onde começar</p><h2 class="mt-1 font-display text-2xl font-semibold">Escolha um módulo</h2></div><p class="text-xs text-text-muted-light dark:text-text-muted-dark">Abra um módulo para ver seus capítulos.</p></div><div class="mt-4 grid gap-2">{chapterModules.map((module, index) => <details class="module-choice"><summary><span class="module-choice-number">{String(index + 1).padStart(2, '0')}</span><span class="min-w-0 flex-1"><strong>{module.name}</strong><small>{module.lessons.length} capítulos</small></span><span class="module-choice-chevron" aria-hidden="true">⌄</span></summary><div class="module-choice-lessons">{module.lessons.length ? module.lessons.map((lesson: any) => { const unlocked = unlockedLessons.has(lesson.slug); return <a data-select-chapter={unlocked ? '' : undefined} data-locked={!unlocked ? 'true' : undefined} aria-disabled={!unlocked ? 'true' : undefined} class:list={[{ 'chapter-locked': !unlocked }]} href={`#${lesson.slug}`}><span>{unlocked ? String(lesson.lesson_order + 1).padStart(2, '0') : '🔒'}</span><strong>{lesson.title}</strong><span aria-hidden="true">↗</span></a>; }) : <p class="p-4 text-sm text-text-muted-light dark:text-text-muted-dark">Os capítulos deste módulo serão publicados em breve.</p>}</div></details>)}</div></section>}
       </section>
       {chapterModules.map((module, moduleIndex) => <section class="module-content" aria-label={module.name} hidden><div class="module-heading"><span class="text-xs font-bold uppercase tracking-widest text-accent-light">Módulo {String(moduleIndex + 1).padStart(2, '0')}</span><span class="mx-2 h-px w-8 bg-border-light dark:bg-border-dark"></span><span class="text-xs font-bold uppercase tracking-widest">{module.name.replace(/^m[oó]dulo\s+[^:]+:\s*/i, '')}</span></div>
-        {module.lessons.map((lesson: any, lessonIndex: number) => <article id={lesson.slug} data-chapter data-lesson={lesson.slug} data-title={lesson.title} class="chapter-article scroll-mt-24" hidden>
+        {module.lessons.map((lesson: any, lessonIndex: number) => { const unlocked = unlockedLessons.has(lesson.slug); return <article id={lesson.slug} data-chapter data-lesson={lesson.slug} data-title={lesson.title} data-unlocked={unlocked} class="chapter-article scroll-mt-24" hidden>
+          {!unlocked ? <><div class="chapter-title-row"><span>🔒</span><h2 class="font-display text-xl font-semibold leading-tight">Capítulo bloqueado</h2></div><div class="chapter-locked-message"><strong>Conclua os capítulos anteriores para liberar este conteúdo.</strong><p class="mt-2 text-sm">Seu progresso fica salvo automaticamente quando você marca uma aula como concluída.</p></div></> : <>
           <div class="chapter-title-row"><span>{String(lesson.lesson_order + 1).padStart(2, '0')}</span><h2 data-chapter-title class="font-display text-3xl font-semibold leading-tight">{lesson.title}</h2></div>
           {lesson.summary && <p class="mb-6 ml-12 text-sm leading-relaxed text-text-muted-light dark:text-text-muted-dark">{lesson.summary}</p>}
           <div class="chapter-tabs" role="tablist" aria-label={`Conteúdo de ${lesson.title}`}><button type="button" id={`${lesson.slug}-theory-tab`} role="tab" aria-selected="true" aria-controls={`${lesson.slug}-theory`} data-chapter-tab="theory">Teoria</button><button type="button" id={`${lesson.slug}-practice-tab`} role="tab" aria-selected="false" aria-controls={`${lesson.slug}-practice`} data-chapter-tab="practice">Guia de bancada</button></div>
@@ -104,10 +117,11 @@ const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minut
           <section id={`${lesson.slug}-practice`} role="tabpanel" aria-labelledby={`${lesson.slug}-practice-tab`} data-chapter-panel="practice" hidden>
             {lesson.practice_markdown ? <section class="guided-practice"><p class="text-[10px] font-bold uppercase tracking-[.18em] text-accent-light">Guia de bancada</p><h3 class="mt-2 font-display text-3xl font-semibold">{lesson.shortcuts?.[0]?.label ? `Prática: ${lesson.shortcuts[0].label}` : 'Prática guiada'}</h3><p class="mt-2 text-sm text-text-muted-light dark:text-text-muted-dark">Execute as etapas na ordem indicada e confira o resultado antes de avançar.</p><article class="prose prose-sm mt-6 max-w-none prose-headings:font-display prose-headings:font-semibold prose-blockquote:border-l-highlight-light prose-blockquote:bg-white/60 prose-blockquote:px-4 prose-blockquote:py-1 dark:prose-invert dark:prose-blockquote:bg-black/10" set:html={lesson.practice_html}></article></section> : <div class="practice-empty"><span aria-hidden="true">✳</span><h3>Guia de bancada em preparação</h3><p>O professor ainda não adicionou uma atividade prática para este capítulo.</p></div>}
           </section>
-          {lessonIndex < module.lessons.length - 1 && <a data-select-chapter href={`#${module.lessons[lessonIndex + 1].slug}`} class="next-chapter"><span class="text-[9px] font-bold uppercase tracking-widest">Próximo capítulo</span><strong class="mt-1 block font-display text-lg">{module.lessons[lessonIndex + 1].title}</strong><span aria-hidden="true" class="absolute right-5 top-1/2 -translate-y-1/2 rounded-full border border-white/40 px-3 py-2">›</span></a>}
-        </article>)}
+          {lessonIndex < module.lessons.length - 1 && unlockedLessons.has(module.lessons[lessonIndex + 1].slug) && <a data-select-chapter href={`#${module.lessons[lessonIndex + 1].slug}`} class="next-chapter"><span class="text-[9px] font-bold uppercase tracking-widest">Próximo capítulo</span><strong class="mt-1 block font-display text-lg">{module.lessons[lessonIndex + 1].title}</strong><span aria-hidden="true" class="absolute right-5 top-1/2 -translate-y-1/2 rounded-full border border-white/40 px-3 py-2">›</span></a>}
+          </>}
+        </article>; })}
       </section>)}
-      {withoutModule.length > 0 && <section class="module-content" hidden><div class="module-heading"><span class="text-xs font-bold uppercase tracking-widest text-accent-light">Conteúdo</span><span class="mx-2 h-px w-8 bg-border-light"></span><span class="text-xs font-bold uppercase tracking-widest">Capítulos</span></div>{withoutModule.map((lesson: any) => <article id={lesson.slug} data-chapter data-lesson={lesson.slug} data-title={lesson.title} class="chapter-article scroll-mt-24" hidden><div class="chapter-title-row"><span>{String(lesson.lesson_order + 1).padStart(2, '0')}</span><h2 data-chapter-title class="font-display text-3xl font-semibold">{lesson.title}</h2></div><div class="chapter-tabs" role="tablist" aria-label={`Conteúdo de ${lesson.title}`}><button type="button" id={`${lesson.slug}-theory-tab`} role="tab" aria-selected="true" aria-controls={`${lesson.slug}-theory`} data-chapter-tab="theory">Teoria</button><button type="button" id={`${lesson.slug}-practice-tab`} role="tab" aria-selected="false" aria-controls={`${lesson.slug}-practice`} data-chapter-tab="practice">Guia de bancada</button></div><button type="button" class="download-chapter-pdf" data-download-chapter title="Na janela de impressão, escolha Salvar como PDF."><span aria-hidden="true">⇩</span> Salvar capítulo em PDF</button><section id={`${lesson.slug}-theory`} role="tabpanel" aria-labelledby={`${lesson.slug}-theory-tab`} data-chapter-panel="theory"><article class="prose mt-7 max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-accent-light dark:prose-invert" set:html={lesson.body_html}></article></section><section id={`${lesson.slug}-practice`} role="tabpanel" aria-labelledby={`${lesson.slug}-practice-tab`} data-chapter-panel="practice" hidden><div class="practice-empty"><span aria-hidden="true">✳</span><h3>Guia de bancada em preparação</h3><p>O professor ainda não adicionou uma atividade prática para este capítulo.</p></div></section></article>)}</section>}
+      {withoutModule.length > 0 && <section class="module-content" hidden><div class="module-heading"><span class="text-xs font-bold uppercase tracking-widest text-accent-light">Conteúdo</span><span class="mx-2 h-px w-8 bg-border-light"></span><span class="text-xs font-bold uppercase tracking-widest">Capítulos</span></div>{withoutModule.map((lesson: any) => { const unlocked = unlockedLessons.has(lesson.slug); return <article id={lesson.slug} data-chapter data-lesson={lesson.slug} data-title={lesson.title} data-unlocked={unlocked} class="chapter-article scroll-mt-24" hidden>{!unlocked ? <div class="chapter-locked-message">Conclua os capítulos anteriores para liberar este conteúdo.</div> : <><div class="chapter-title-row"><span>{String(lesson.lesson_order + 1).padStart(2, '0')}</span><h2 data-chapter-title class="font-display text-3xl font-semibold">{lesson.title}</h2></div><div class="chapter-tabs" role="tablist" aria-label={`Conteúdo de ${lesson.title}`}><button type="button" id={`${lesson.slug}-theory-tab`} role="tab" aria-selected="true" aria-controls={`${lesson.slug}-theory`} data-chapter-tab="theory">Teoria</button><button type="button" id={`${lesson.slug}-practice-tab`} role="tab" aria-selected="false" aria-controls={`${lesson.slug}-practice`} data-chapter-tab="practice">Guia de bancada</button></div><button type="button" class="download-chapter-pdf" data-download-chapter title="Na janela de impressão, escolha Salvar como PDF."><span aria-hidden="true">⇩</span> Salvar capítulo em PDF</button><section id={`${lesson.slug}-theory`} role="tabpanel" aria-labelledby={`${lesson.slug}-theory-tab`} data-chapter-panel="theory"><article class="prose mt-7 max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-accent-light dark:prose-invert" set:html={lesson.body_html}></article></section><section id={`${lesson.slug}-practice`} role="tabpanel" aria-labelledby={`${lesson.slug}-practice-tab`} data-chapter-panel="practice" hidden><div class="practice-empty"><span aria-hidden="true">✳</span><h3>Guia de bancada em preparação</h3><p>O professor ainda não adicionou uma atividade prática para este capítulo.</p></div></section></>}</article>; })}</section>}
       {chapterCount === 0 && <p class="rounded-2xl border border-dashed border-border-light p-8 text-center text-text-muted-light dark:border-border-dark dark:text-text-muted-dark">Ainda não há capítulos publicados nesta disciplina.</p>}
     </main>
 
@@ -115,7 +129,7 @@ const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minut
   </div>
 </BaseLayout>
 
-<script type="application/json" id="chapter-data" set:html={JSON.stringify({ discipline, chapters: lessons.map((lesson) => ({ slug: lesson.slug, shortcuts: lesson.shortcuts ?? (lesson.shortcut_keys ? [{ keys: lesson.shortcut_keys, label: lesson.shortcut_label }] : []), hasPractice: Boolean(lesson.practice_markdown), completed: completedLessons.has(lesson.slug) })) }).replace(/</g, '\\u003c')}></script>
+<script type="application/json" id="chapter-data" set:html={JSON.stringify({ discipline, chapters: lessons.map((lesson) => ({ slug: lesson.slug, shortcuts: lesson.shortcuts ?? (lesson.shortcut_keys ? [{ keys: lesson.shortcut_keys, label: lesson.shortcut_label }] : []), hasPractice: Boolean(lesson.practice_markdown), completed: completedLessons.has(lesson.slug), unlocked: unlockedLessons.has(lesson.slug) })) }).replace(/</g, '\\u003c')}></script>
 <script>
   const pageData = JSON.parse(document.querySelector('#chapter-data')?.textContent ?? '{"discipline":"","chapters":[]}');
   const { discipline, chapters: chapterData } = pageData;
@@ -139,6 +153,11 @@ const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minut
   async function activateChapter(chapter: HTMLElement) {
     const slug = chapter.dataset.lesson ?? '';
     if (!slug || slug === activeSlug) return;
+    const details = chapterBySlug.get(slug);
+    if (!details?.unlocked) {
+      alert('Conclua os capítulos anteriores para liberar este conteúdo.');
+      return;
+    }
     if (noteDirty && !confirm('Sua anotação ainda não foi salva. Descartar as alterações?')) return;
     noteDirty = false;
     history.replaceState(null, '', `#${slug}`);
@@ -162,7 +181,6 @@ const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minut
       if (selected) link.setAttribute('aria-current', 'true'); else link.removeAttribute('aria-current');
     });
     if (activeTitle) activeTitle.textContent = chapter.dataset.title ?? 'Minhas notas';
-    const details = chapterBySlug.get(slug);
     if (completeButton) {
       const completed = Boolean(details?.completed);
       completeButton.dataset.lesson = slug;
@@ -238,6 +256,10 @@ const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minut
     const chapter = chapters.find((item) => item.dataset.lesson === slug);
     if (chapter) activateChapter(chapter);
   }));
+  document.querySelectorAll<HTMLAnchorElement>('[data-locked="true"]').forEach((link) => link.addEventListener('click', (event) => {
+    event.preventDefault();
+    alert('Conclua os capítulos anteriores para liberar este conteúdo.');
+  }));
   welcomeNav?.addEventListener('click', () => {
     if (noteDirty && !confirm('Sua anotação ainda não foi salva. Descartar as alterações?')) return;
     noteDirty = false;
@@ -290,12 +312,16 @@ const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minut
     completeButton.disabled = true;
     try {
       const response = await fetch('/api/progress', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ discipline_slug: completeButton.dataset.discipline, lesson_slug: completeButton.dataset.lesson, completed: true }) });
-      if (!response.ok) throw new Error('Entre na sua conta para salvar seu progresso.');
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error ?? 'Não foi possível salvar seu progresso.');
       completeButton.dataset.completed = 'true';
       completeButton.querySelector('span')!.textContent = '✓';
       completeButton.querySelectorAll('span')[1]!.textContent = 'Aula concluída';
       const chapter = chapters.find((item) => item.dataset.lesson === completeButton.dataset.lesson);
       if (chapter) { const details = chapterBySlug.get(completeButton.dataset.lesson); if (details) details.completed = true; }
+      // Recarrega os vínculos de progresso no servidor; assim o próximo capítulo
+      // só recebe conteúdo depois que a conclusão anterior foi persistida.
+      location.reload();
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Não foi possível salvar o progresso.');
       completeButton.disabled = false;
@@ -347,9 +373,13 @@ const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minut
   .module-choice-lessons a:hover { background:color-mix(in srgb,var(--color-accent-light) 8%,transparent); color:var(--color-accent-light); }
   .module-choice-lessons a span:first-child { color:var(--color-accent-light); font-family:Fraunces,serif; }
   .module-choice-lessons a strong { flex:1; font-weight:600; }
+  .chapter-locked { cursor:not-allowed; opacity:.5; }
+  .chapter-locked:hover { background:transparent!important; color:inherit!important; }
+  .chapter-locked-message { margin:22px 0 0 40px; border:1px dashed var(--color-border-light); border-radius:14px; background:var(--color-surface-light); padding:22px; color:var(--color-text-muted-light); font-size:.9rem; line-height:1.6; }
   :global(.dark) .module-choice { background:var(--color-surface-dark); border-color:var(--color-border-dark); }
   :global(.dark) .module-choice summary small { color:var(--color-text-muted-dark); }
   :global(.dark) .module-choice-lessons { border-color:var(--color-border-dark); }
+  :global(.dark) .chapter-locked-message { border-color:var(--color-border-dark); background:var(--color-surface-dark); color:var(--color-text-muted-dark); }
   .outcome-card { border:1px solid var(--color-border-light); border-radius:12px; background:var(--color-surface-light); padding:18px; color:var(--color-text-main-light); }
   .outcome-card-dark { border-color:#14231e; background:#14231e; color:white; }
   :global(.dark) .outcome-card { border-color:var(--color-border-dark); background:var(--color-surface-dark); color:var(--color-text-main-dark); }

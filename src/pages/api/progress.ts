@@ -13,6 +13,16 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     const supabase = createSupabaseServerClient(cookies, request);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return Response.json({ error: 'Autenticação necessária.' }, { status: 401 });
+    const [{ data: lessons, error: lessonsError }, { data: existingProgress, error: progressError }] = await Promise.all([
+      supabase.from('apostilas').select('slug,lesson_order').eq('discipline_slug', discipline_slug).eq('published', true).order('lesson_order'),
+      supabase.from('lesson_progress').select('lesson_slug').eq('user_id', user.id).eq('disciplina_slug', discipline_slug)
+    ]);
+    if (lessonsError || progressError) throw lessonsError ?? progressError;
+    const currentIndex = (lessons ?? []).findIndex((lesson) => lesson.slug === lesson_slug);
+    if (currentIndex < 0) return Response.json({ error: 'Capítulo não encontrado.' }, { status: 404 });
+    const completedBefore = new Set((existingProgress ?? []).map((row) => row.lesson_slug));
+    const missingPrerequisite = (lessons ?? []).slice(0, currentIndex).find((lesson) => !completedBefore.has(lesson.slug));
+    if (missingPrerequisite) return Response.json({ error: 'Conclua os capítulos anteriores antes de avançar.' }, { status: 409 });
     const { error } = await supabase.from('lesson_progress').upsert({ user_id: user.id, disciplina_slug: discipline_slug, lesson_slug }, { onConflict: 'user_id,disciplina_slug,lesson_slug' });
     if (error) throw error;
     return Response.json({ progress: { discipline_slug, lesson_slug, completed } });

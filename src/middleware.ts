@@ -21,7 +21,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
     if (profileError || !profile?.is_active) return reject(403, 'A conta aguarda aprovação.');
     if (isAdmin && profile.role !== 'admin') return reject(403, 'Acesso administrativo necessário.');
     if (isApostila && profile.role !== 'admin') {
-      const discipline = pathname.split('/').filter(Boolean)[1];
+      const segments = pathname.split('/').filter(Boolean);
+      const discipline = segments[1];
       if (discipline) {
         const { data: assignments, error: assignmentError } = await supabase.from('student_disciplines').select('discipline_slug').eq('user_id', user.id).eq('discipline_slug', discipline).limit(1);
         if (assignmentError) {
@@ -29,6 +30,27 @@ export const onRequest = defineMiddleware(async (context, next) => {
           return context.redirect('/?acesso=restrito');
         }
         if (!assignments?.length) return context.redirect('/?acesso=restrito');
+
+        // Rotas antigas de capítulo também passam pela barreira sequencial.
+        // A página principal aplica a mesma regra antes de renderizar conteúdo.
+        if (segments.length > 2) {
+          const targetSlug = segments.at(-1);
+          const [{ data: lessons, error: lessonsError }, { data: progress, error: progressError }] = await Promise.all([
+            supabase.from('apostilas').select('slug,lesson_order').eq('discipline_slug', discipline).eq('published', true).order('lesson_order'),
+            supabase.from('lesson_progress').select('lesson_slug').eq('user_id', user.id).eq('disciplina_slug', discipline)
+          ]);
+          if (lessonsError || progressError) {
+            console.error('Falha ao verificar pré-requisitos do capítulo:', lessonsError ?? progressError);
+            return context.redirect(`/apostila/${discipline}`);
+          }
+          const currentIndex = (lessons ?? []).findIndex((lesson) => lesson.slug === targetSlug);
+          if (currentIndex >= 0) {
+            const completed = new Set((progress ?? []).map((row) => row.lesson_slug));
+            if ((lessons ?? []).slice(0, currentIndex).some((lesson) => !completed.has(lesson.slug))) {
+              return context.redirect(`/apostila/${discipline}?capitulo-bloqueado=1`);
+            }
+          }
+        }
       }
     }
     return next();
