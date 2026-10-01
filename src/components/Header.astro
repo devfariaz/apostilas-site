@@ -33,6 +33,9 @@ const yearGroups = [
 ---
 <header class="site-header sticky top-0 z-30 border-b border-border-light bg-bg-light/90 backdrop-blur dark:border-border-dark dark:bg-bg-dark/90">
   <div class="header-main mx-auto grid max-w-[1440px] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-5 lg:px-8">
+    <button id="mobile-menu-toggle" class="mobile-menu-toggle col-start-1 row-start-1 grid h-10 w-10 place-items-center justify-self-start rounded-xl border border-border-light text-text-main-light transition hover:bg-black/5 lg:hidden dark:border-border-dark dark:text-text-main-dark dark:hover:bg-white/10" type="button" aria-label="Abrir menu de disciplinas" aria-controls="mobile-year-nav" aria-expanded="false">
+      <span class="hamburger-icon" aria-hidden="true"><i></i><i></i><i></i></span>
+    </button>
     <nav class="year-nav desktop-year-nav col-start-1 hidden min-w-0 items-center gap-1 text-sm text-text-muted-light lg:flex dark:text-text-muted-dark" aria-label="Disciplinas por ano">
       {yearGroups.map((group) => group.subjects.length > 0 && <details class="year-nav-group relative">
         <summary class="flex cursor-pointer list-none items-center gap-2 rounded-full px-3 py-2 font-semibold transition hover:bg-black/5 hover:text-accent-light dark:hover:bg-white/10">{group.label}<span class="year-nav-chevron" aria-hidden="true">⌄</span></summary>
@@ -46,10 +49,10 @@ const yearGroups = [
       {user ? <details class="profile-menu relative"><summary aria-label={displayName} class="flex max-w-40 cursor-pointer list-none items-center gap-2 rounded-full p-1.5 text-sm hover:bg-black/5 dark:hover:bg-white/10"><span class="profile-initials grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent-light text-xs font-bold text-white sm:hidden">{userInitials}</span><span class="hidden max-w-32 truncate px-2 sm:inline">{displayName}</span></summary><div class="absolute right-0 mt-2 w-52 rounded-2xl border border-border-light bg-surface-light p-3 shadow-xl dark:border-border-dark dark:bg-surface-dark"><p class="truncate px-2 py-1 text-xs text-text-muted-light dark:text-text-muted-dark">{user.email}</p>{isAdmin && <a href="/admin" class="block rounded-xl px-2 py-2 text-sm hover:bg-black/5 dark:hover:bg-white/10">Painel administrativo</a>}<form action="/api/auth/logout" method="post"><button class="mt-2 w-full rounded-xl px-2 py-2 text-left text-sm hover:bg-black/5 dark:hover:bg-white/10">Sair da conta</button></form></div></details> : <a class="rounded-full bg-accent-light px-3 py-2 text-sm font-semibold text-white hover:opacity-90 sm:px-4" href="/login">Entrar</a>}
     </div>
   </div>
-  <nav class="year-nav mobile-year-nav mx-auto flex max-w-[1440px] items-center justify-center gap-1 px-3 pb-2 text-xs text-text-muted-light sm:gap-2 sm:px-5 lg:hidden dark:text-text-muted-dark" aria-label="Disciplinas por ano">
+  <nav id="mobile-year-nav" class="year-nav mobile-year-nav mx-auto hidden max-w-[1440px] flex-col gap-2 px-3 pb-3 text-sm text-text-muted-light sm:px-5 lg:hidden dark:text-text-muted-dark" aria-label="Disciplinas por ano" hidden>
     {yearGroups.map((group) => group.subjects.length > 0 && <details class="year-nav-group relative">
-      <summary class="flex cursor-pointer list-none items-center gap-1 rounded-full px-3 py-1.5 font-semibold transition hover:bg-black/5 hover:text-accent-light dark:hover:bg-white/10">{group.label}<span class="year-nav-chevron" aria-hidden="true">⌄</span></summary>
-      <div class="year-nav-menu absolute left-0 top-full z-40 mt-2 min-w-60 rounded-2xl border border-border-light bg-surface-light p-2 text-sm shadow-xl dark:border-border-dark dark:bg-surface-dark">
+      <summary class="flex cursor-pointer list-none items-center justify-between rounded-xl border border-border-light bg-surface-light px-4 py-3 font-semibold transition hover:border-accent-light dark:border-border-dark dark:bg-surface-dark">{group.label}<span class="year-nav-chevron" aria-hidden="true">⌄</span></summary>
+      <div class="year-nav-menu mt-1 rounded-xl border border-border-light bg-surface-light p-1 text-sm dark:border-border-dark dark:bg-surface-dark">
         {group.subjects.map((item) => <a class="block rounded-xl px-3 py-2.5 transition hover:bg-black/5 hover:text-accent-light dark:hover:bg-white/10" href={`/apostila/${item.slug}`}><span class="block font-semibold text-text-main-light dark:text-text-main-dark">{item.name}</span>{item.description && <span class="mt-0.5 block text-xs text-text-muted-light dark:text-text-muted-dark">{item.description}</span>}</a>)}
       </div>
     </details>)}
@@ -58,6 +61,23 @@ const yearGroups = [
 
 <script>
   const yearMenus = [...document.querySelectorAll<HTMLDetailsElement>('.year-nav-group')];
+  const mobileMenu = document.querySelector<HTMLElement>('#mobile-year-nav');
+  const mobileMenuToggle = document.querySelector<HTMLButtonElement>('#mobile-menu-toggle');
+  const setMobileMenuOpen = (open: boolean) => {
+    if (!mobileMenu || !mobileMenuToggle) return;
+    mobileMenu.hidden = !open;
+    mobileMenu.classList.toggle('hidden', !open);
+    mobileMenuToggle.setAttribute('aria-expanded', String(open));
+    mobileMenuToggle.setAttribute('aria-label', open ? 'Fechar menu de disciplinas' : 'Abrir menu de disciplinas');
+    if (!open) yearMenus.filter((menu) => mobileMenu.contains(menu)).forEach((menu) => { menu.open = false; });
+  };
+  mobileMenuToggle?.addEventListener('click', () => setMobileMenuOpen(mobileMenuToggle.getAttribute('aria-expanded') !== 'true'));
+  mobileMenu?.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => setMobileMenuOpen(false)));
+  document.addEventListener('click', (event) => {
+    if (mobileMenu?.hidden) return;
+    if (event.target instanceof Node && !mobileMenu?.contains(event.target) && !mobileMenuToggle?.contains(event.target)) setMobileMenuOpen(false);
+  });
+  document.addEventListener('keydown', (event) => { if (event.key === 'Escape') setMobileMenuOpen(false); });
   yearMenus.forEach((menu) => menu.addEventListener('toggle', () => {
     if (!menu.open) return;
     yearMenus.forEach((otherMenu) => {
@@ -69,6 +89,10 @@ const yearGroups = [
 <style>
   .header-main { min-height:64px; }
   .brand-link { text-align:left; }
+  .hamburger-icon { display:flex; width:18px; flex-direction:column; gap:4px; }
+  .hamburger-icon i { display:block; height:2px; border-radius:2px; background:currentColor; }
+  .mobile-year-nav:not([hidden]) { display:flex; }
+  .mobile-year-nav .year-nav-menu { position:static; min-width:0; box-shadow:none; }
   .year-nav-group > summary::-webkit-details-marker { display:none; }
   .year-nav-chevron { font-size:11px; transition:transform .18s; }
   .year-nav-group[open] .year-nav-chevron { transform:rotate(180deg); }
