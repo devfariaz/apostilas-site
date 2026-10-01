@@ -6,9 +6,27 @@ export const GET: APIRoute = async ({ cookies, request }) => {
   const auth = await requireAdmin(cookies, request); if (!auth.user) return Response.json({ error: auth.error }, { status: auth.status });
   const { data, error } = await auth.supabase.rpc('admin_list_students');
   if (error) return Response.json({ error: error.message }, { status: 500 });
+  const studentIds = (data ?? []).map((student: { id: string }) => student.id);
+  const { data: assignments, error: assignmentsError } = studentIds.length
+    ? await auth.supabase.from('student_disciplines').select('user_id,discipline_slug').in('user_id', studentIds)
+    : { data: [], error: null };
+  if (assignmentsError) return Response.json({ error: assignmentsError.message }, { status: 500 });
+  const disciplinesByStudent = new Map<string, string[]>();
+  for (const assignment of assignments ?? []) {
+    const current = disciplinesByStudent.get(assignment.user_id) ?? [];
+    current.push(assignment.discipline_slug);
+    disciplinesByStudent.set(assignment.user_id, current);
+  }
+  // Read the relation table directly so the UI always reflects the persisted
+  // assignments, even if an older RPC definition returns a stale aggregate.
+  const students = (data ?? []).map((student: Record<string, any>) => ({
+    ...student,
+    year_level: student.year_level == null ? null : Number(student.year_level),
+    discipline_slugs: disciplinesByStudent.get(student.id) ?? []
+  }));
   const { data: disciplines, error: disciplinesError } = await auth.supabase.from('disciplines').select('slug,name').order('sort_order');
   if (disciplinesError) return Response.json({ error: disciplinesError.message }, { status: 500 });
-  return Response.json({ students: data, disciplines });
+  return Response.json({ students, disciplines });
 };
 
 export const PUT: APIRoute = async ({ request, cookies }) => {
