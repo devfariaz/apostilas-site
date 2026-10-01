@@ -211,8 +211,17 @@ const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minut
     }));
     chapter.querySelector<HTMLButtonElement>('[data-download-chapter]')?.addEventListener('click', () => {
       const previousTitle = document.title;
+      const panels = [...chapter.querySelectorAll<HTMLElement>('[data-chapter-panel]')];
+      const originalPanelState = panels.map((panel) => ({ panel, wasHidden: panel.hidden, display: panel.style.display }));
+      panels.forEach((panel) => { panel.hidden = false; panel.style.display = 'block'; });
       document.title = `${chapter.dataset.title ?? previousTitle} — Professor Deivid Nobre`;
-      window.addEventListener('afterprint', () => { document.title = previousTitle; }, { once: true });
+      window.addEventListener('afterprint', () => {
+        document.title = previousTitle;
+        originalPanelState.forEach(({ panel, wasHidden, display }) => {
+          panel.hidden = wasHidden;
+          panel.style.display = display;
+        });
+      }, { once: true });
       window.print();
     });
   });
