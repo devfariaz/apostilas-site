@@ -48,19 +48,19 @@ const { data: { user } } = await supabase.auth.getUser();
   .bulk-step { border:1px solid #e5e0d8; border-radius:18px; padding:1rem; background:#fff; }
   :global(.dark) .bulk-step { border-color:#2a2a2e; background:#1e1e22; }
   .bulk-step-title { display:flex; align-items:flex-start; gap:.75rem; }
-  .student-card.is-selected { border-color:var(--color-accent-light); background:color-mix(in srgb,var(--color-accent-light) 8%,white); box-shadow:0 0 0 2px color-mix(in srgb,var(--color-accent-light) 18%,transparent); }
-  :global(.dark) .student-card.is-selected { background:color-mix(in srgb,var(--color-accent-light) 13%,#1e1e22); }
-  .student-select { width:1.15rem; height:1.15rem; flex:none; accent-color:var(--color-accent-light); cursor:pointer; }
-  .student-year-badge { display:inline-flex; align-items:center; border-radius:9999px; background:#e5f5f8; padding:.2rem .55rem; color:#087f99; font-size:.64rem; font-weight:800; line-height:1.2; white-space:nowrap; }
-  .student-year-badge.is-missing { background:#f3f1ed; color:#827d74; }
-  :global(.dark) .student-year-badge { background:color-mix(in srgb,var(--color-accent-light) 18%,#1e1e22); color:var(--color-accent-light); }
-  :global(.dark) .student-year-badge.is-missing { background:#2a2a2e; color:#a1a1aa; }
-  .student-assigned { border-top:1px solid color-mix(in srgb,var(--color-border-light) 75%,transparent); padding-top:.65rem; }
-  :global(.dark) .student-assigned { border-color:var(--color-border-dark); }
-  .student-assigned-heading { display:block; color:var(--color-text-muted-light); font-size:.625rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
-  :global(.dark) .student-assigned-heading { color:var(--color-text-muted-dark); }
-  .student-discipline-tag { display:inline-flex; align-items:center; border:1px solid color-mix(in srgb,var(--color-accent-light) 28%,transparent); border-radius:9999px; background:color-mix(in srgb,var(--color-accent-light) 10%,white); padding:.25rem .55rem; color:var(--color-accent-light); font-size:.68rem; font-weight:700; line-height:1.2; }
-  :global(.dark) .student-discipline-tag { background:color-mix(in srgb,var(--color-accent-light) 15%,#1e1e22); }
+  :global(.student-card.is-selected) { border-color:var(--color-accent-light); background:color-mix(in srgb,var(--color-accent-light) 8%,white); box-shadow:0 0 0 2px color-mix(in srgb,var(--color-accent-light) 18%,transparent); }
+  :global(.dark .student-card.is-selected) { background:color-mix(in srgb,var(--color-accent-light) 13%,#1e1e22); }
+  :global(.student-select) { width:1.15rem; height:1.15rem; flex:none; accent-color:var(--color-accent-light); cursor:pointer; }
+  :global(.student-year-badge) { display:inline-flex; align-items:center; border-radius:9999px; background:#e5f5f8; padding:.15rem .45rem; color:#087f99; font-size:.64rem; font-weight:800; line-height:1.2; white-space:nowrap; }
+  :global(.student-year-badge.is-missing) { background:#f3f1ed; color:#827d74; }
+  :global(.dark .student-year-badge) { background:color-mix(in srgb,var(--color-accent-light) 18%,#1e1e22); color:var(--color-accent-light); }
+  :global(.dark .student-year-badge.is-missing) { background:#2a2a2e; color:#a1a1aa; }
+  :global(.student-assigned) { border-top:1px solid color-mix(in srgb,var(--color-border-light) 75%,transparent); padding-top:.55rem; }
+  :global(.dark .student-assigned) { border-color:var(--color-border-dark); }
+  :global(.student-assigned-heading) { display:block; color:var(--color-text-muted-light); font-size:.59rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+  :global(.dark .student-assigned-heading) { color:var(--color-text-muted-dark); }
+  :global(.student-discipline-tag) { display:inline-flex; align-items:center; border:1px solid color-mix(in srgb,var(--color-accent-light) 28%,transparent); border-radius:9999px; background:color-mix(in srgb,var(--color-accent-light) 10%,white); padding:.22rem .5rem; color:var(--color-accent-light); font-size:.66rem; font-weight:700; line-height:1.2; }
+  :global(.dark .student-discipline-tag) { background:color-mix(in srgb,var(--color-accent-light) 15%,#1e1e22); }
   .bulk-step-title>span { display:grid; width:1.8rem; height:1.8rem; flex:none; place-items:center; border-radius:999px; background:var(--color-accent-light); color:white; font-size:.8rem; font-weight:700; }
   .bulk-step-title strong,.bulk-step-title small { display:block; }
   .bulk-step-title small { margin-top:.2rem; color:#777; font-size:.72rem; line-height:1.45; }
@@ -166,11 +166,8 @@ const { data: { user } } = await supabase.auth.getUser();
   const yearDisciplineDefaults: Record<string, string[]> = { '1': ['game-design-i','producao-multimidia-i'], '2': ['game-design-ii','producao-multimidia-ii'], '3': ['marketing','game-design-iii','producao-multimidia-iii'] };
   function studentYear(student: Row): number | null {
     const savedYear = Number(student.year_level);
-    if (Number.isInteger(savedYear) && savedYear >= 1 && savedYear <= 3) return savedYear;
-    const assigned = (student.discipline_slugs ?? []) as string[];
-    if (!assigned.length) return null;
-    const matches = Object.entries(yearDisciplineDefaults).filter(([, slugs]) => assigned.every((slug) => slugs.includes(slug)));
-    return matches.length === 1 ? Number(matches[0][0]) : null;
+    // O ano letivo é um dado independente das disciplinas atribuídas.
+    return Number.isInteger(savedYear) && savedYear >= 1 && savedYear <= 3 ? savedYear : null;
   }
   function updateBulkState() { const year = ($('#bulk-year') as HTMLSelectElement).value; const button = $('#bulk-assign') as HTMLButtonElement; button.disabled = !year || selectedStudentIds.size === 0; $('#selection-count').textContent = String(selectedStudentIds.size); const preview = $('#bulk-preview'); if (!year) { preview.textContent = 'Selecione um ano para ver as disciplinas vinculadas.'; return; } const names = yearDisciplineDefaults[year].map((slug) => availableDisciplines.find((discipline) => discipline.slug === slug)?.name ?? slug); preview.textContent = `Serão atribuídas: ${names.join(' · ')}.`; }
   function openStudentEdit(student: Row) { editingStudent = student; $('#student-edit-name').textContent = student.full_name || 'Vínculo escolar'; $('#student-edit-email').textContent = student.email; const year = $('#student-edit-year') as HTMLSelectElement; const inferredYear = studentYear(student); year.value = inferredYear ? String(inferredYear) : ''; const list = $('#student-edit-disciplines'); list.replaceChildren(); const assigned = new Set<string>(student.discipline_slugs ?? []); availableDisciplines.forEach((discipline) => { const label = document.createElement('label'); label.className = 'flex items-center gap-2 rounded-xl border border-border-light p-3 text-sm dark:border-border-dark'; const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.value = discipline.slug; checkbox.checked = assigned.has(discipline.slug); checkbox.className = 'accent-accent-light'; label.append(checkbox, document.createTextNode(discipline.name)); list.append(label); }); $('#student-edit-dialog').showModal(); }
