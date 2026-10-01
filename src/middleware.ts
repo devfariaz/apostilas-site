@@ -23,7 +23,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
     if (isApostila && profile.role !== 'admin') {
       const discipline = pathname.split('/').filter(Boolean)[1];
       if (discipline) {
-        const { data: assignment, error: assignmentError } = await supabase.from('student_disciplines').select('discipline_slug').eq('user_id', user.id).eq('discipline_slug', discipline).maybeSingle();
+        // A tabela pode conter vínculos duplicados legados; a autorização só
+        // precisa confirmar que existe pelo menos um vínculo correspondente.
+        const { data: assignment, error: assignmentError } = await supabase.from('student_disciplines').select('discipline_slug').eq('user_id', user.id).eq('discipline_slug', discipline).limit(1).maybeSingle();
         if (assignmentError || !assignment) return context.redirect('/?acesso=restrito');
       }
     }
