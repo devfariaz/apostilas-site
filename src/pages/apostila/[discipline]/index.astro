@@ -95,6 +95,7 @@ const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minut
           <div class="chapter-title-row"><span>{String(lesson.lesson_order + 1).padStart(2, '0')}</span><h2 data-chapter-title class="font-display text-3xl font-semibold leading-tight">{lesson.title}</h2></div>
           {lesson.summary && <p class="mb-6 ml-12 text-sm leading-relaxed text-text-muted-light dark:text-text-muted-dark">{lesson.summary}</p>}
           <div class="chapter-tabs" role="tablist" aria-label={`Conteúdo de ${lesson.title}`}><button type="button" id={`${lesson.slug}-theory-tab`} role="tab" aria-selected="true" aria-controls={`${lesson.slug}-theory`} data-chapter-tab="theory">Teoria</button><button type="button" id={`${lesson.slug}-practice-tab`} role="tab" aria-selected="false" aria-controls={`${lesson.slug}-practice`} data-chapter-tab="practice">Guia de bancada</button></div>
+          <button type="button" class="download-chapter-pdf" data-download-chapter title="Na janela de impressão, escolha Salvar como PDF."><span aria-hidden="true">⇩</span> Salvar capítulo em PDF</button>
           <section id={`${lesson.slug}-theory`} role="tabpanel" aria-labelledby={`${lesson.slug}-theory-tab`} data-chapter-panel="theory">
             {lesson.key_idea && <blockquote class="key-idea"><span class="text-5xl font-display leading-none text-accent-light">“</span><p>{lesson.key_idea}</p></blockquote>}
             <article class="prose prose-base mt-7 max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-accent-light dark:prose-invert" set:html={lesson.body_html}></article>
@@ -106,7 +107,7 @@ const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minut
           {lessonIndex < module.lessons.length - 1 && <a data-select-chapter href={`#${module.lessons[lessonIndex + 1].slug}`} class="next-chapter"><span class="text-[9px] font-bold uppercase tracking-widest">Próximo capítulo</span><strong class="mt-1 block font-display text-lg">{module.lessons[lessonIndex + 1].title}</strong><span aria-hidden="true" class="absolute right-5 top-1/2 -translate-y-1/2 rounded-full border border-white/40 px-3 py-2">›</span></a>}
         </article>)}
       </section>)}
-      {withoutModule.length > 0 && <section class="module-content" hidden><div class="module-heading"><span class="text-xs font-bold uppercase tracking-widest text-accent-light">Conteúdo</span><span class="mx-2 h-px w-8 bg-border-light"></span><span class="text-xs font-bold uppercase tracking-widest">Capítulos</span></div>{withoutModule.map((lesson: any) => <article id={lesson.slug} data-chapter data-lesson={lesson.slug} data-title={lesson.title} class="chapter-article scroll-mt-24" hidden><div class="chapter-title-row"><span>{String(lesson.lesson_order + 1).padStart(2, '0')}</span><h2 data-chapter-title class="font-display text-3xl font-semibold">{lesson.title}</h2></div><div class="chapter-tabs" role="tablist" aria-label={`Conteúdo de ${lesson.title}`}><button type="button" id={`${lesson.slug}-theory-tab`} role="tab" aria-selected="true" aria-controls={`${lesson.slug}-theory`} data-chapter-tab="theory">Teoria</button><button type="button" id={`${lesson.slug}-practice-tab`} role="tab" aria-selected="false" aria-controls={`${lesson.slug}-practice`} data-chapter-tab="practice">Guia de bancada</button></div><section id={`${lesson.slug}-theory`} role="tabpanel" aria-labelledby={`${lesson.slug}-theory-tab`} data-chapter-panel="theory"><article class="prose mt-7 max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-accent-light dark:prose-invert" set:html={lesson.body_html}></article></section><section id={`${lesson.slug}-practice`} role="tabpanel" aria-labelledby={`${lesson.slug}-practice-tab`} data-chapter-panel="practice" hidden><div class="practice-empty"><span aria-hidden="true">✳</span><h3>Guia de bancada em preparação</h3><p>O professor ainda não adicionou uma atividade prática para este capítulo.</p></div></section></article>)}</section>}
+      {withoutModule.length > 0 && <section class="module-content" hidden><div class="module-heading"><span class="text-xs font-bold uppercase tracking-widest text-accent-light">Conteúdo</span><span class="mx-2 h-px w-8 bg-border-light"></span><span class="text-xs font-bold uppercase tracking-widest">Capítulos</span></div>{withoutModule.map((lesson: any) => <article id={lesson.slug} data-chapter data-lesson={lesson.slug} data-title={lesson.title} class="chapter-article scroll-mt-24" hidden><div class="chapter-title-row"><span>{String(lesson.lesson_order + 1).padStart(2, '0')}</span><h2 data-chapter-title class="font-display text-3xl font-semibold">{lesson.title}</h2></div><div class="chapter-tabs" role="tablist" aria-label={`Conteúdo de ${lesson.title}`}><button type="button" id={`${lesson.slug}-theory-tab`} role="tab" aria-selected="true" aria-controls={`${lesson.slug}-theory`} data-chapter-tab="theory">Teoria</button><button type="button" id={`${lesson.slug}-practice-tab`} role="tab" aria-selected="false" aria-controls={`${lesson.slug}-practice`} data-chapter-tab="practice">Guia de bancada</button></div><button type="button" class="download-chapter-pdf" data-download-chapter title="Na janela de impressão, escolha Salvar como PDF."><span aria-hidden="true">⇩</span> Salvar capítulo em PDF</button><section id={`${lesson.slug}-theory`} role="tabpanel" aria-labelledby={`${lesson.slug}-theory-tab`} data-chapter-panel="theory"><article class="prose mt-7 max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-accent-light dark:prose-invert" set:html={lesson.body_html}></article></section><section id={`${lesson.slug}-practice`} role="tabpanel" aria-labelledby={`${lesson.slug}-practice-tab`} data-chapter-panel="practice" hidden><div class="practice-empty"><span aria-hidden="true">✳</span><h3>Guia de bancada em preparação</h3><p>O professor ainda não adicionou uma atividade prática para este capítulo.</p></div></section></article>)}</section>}
       {chapterCount === 0 && <p class="rounded-2xl border border-dashed border-border-light p-8 text-center text-text-muted-light dark:border-border-dark dark:text-text-muted-dark">Ainda não há capítulos publicados nesta disciplina.</p>}
     </main>
 
@@ -208,6 +209,12 @@ const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minut
       });
       panels.forEach((panel) => { panel.hidden = panel.dataset.chapterPanel !== selected; });
     }));
+    chapter.querySelector<HTMLButtonElement>('[data-download-chapter]')?.addEventListener('click', () => {
+      const previousTitle = document.title;
+      document.title = `${chapter.dataset.title ?? previousTitle} — Professor Deivid Nobre`;
+      window.addEventListener('afterprint', () => { document.title = previousTitle; }, { once: true });
+      window.print();
+    });
   });
   practiceLink?.addEventListener('click', (event) => {
     const slug = activeSlug;
@@ -374,6 +381,11 @@ const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minut
   .note-save-button:disabled { cursor:not-allowed; opacity:.5; box-shadow:none; }
   .note-save-button span:first-child { display:grid; width:1.25rem; height:1.25rem; place-items:center; border:1px solid #ffffff8c; border-radius:999px; font-size:.85rem; }
   .shortcut-panel { border:1px solid color-mix(in srgb,var(--color-highlight-light) 45%,var(--color-border-light)); }
+  .download-chapter-pdf { display:inline-flex; align-items:center; gap:.5rem; margin:-.5rem 0 1.25rem auto; border:1px solid var(--color-border-light); border-radius:999px; background:var(--color-surface-light); padding:.55rem .9rem; color:var(--color-text-main-light); font-size:.75rem; font-weight:700; transition:border-color .18s,color .18s,background .18s; }
+  .download-chapter-pdf:hover { border-color:var(--color-accent-light); color:var(--color-accent-light); }
+  .download-chapter-pdf span { font-size:1rem; line-height:1; }
+  :global(.dark) .download-chapter-pdf { border-color:var(--color-border-dark); background:var(--color-surface-dark); color:var(--color-text-main-dark); }
+  :global(.dark) .download-chapter-pdf:hover { border-color:var(--color-accent-dark); color:var(--color-accent-dark); }
   @keyframes panel-in { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
   #chapter-nav [hidden] { display:none; }
   @media (max-width:1100px) {
@@ -412,6 +424,21 @@ const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minut
     .module-choice-lessons { padding-inline:6px; }
     .module-choice-lessons a { gap:8px; padding-inline:7px; }
     .key-idea,.guided-practice,.essential-card { padding:16px; }
+  }
+  @media print {
+    @page { size:A4; margin:18mm 16mm; }
+    :global(.site-header),.reader-left,.reader-right,.chapter-tabs,.download-chapter-pdf,.next-chapter { display:none!important; }
+    .reader-shell { display:block!important; max-width:none!important; margin:0!important; padding:0!important; }
+    .reader-main { width:auto!important; }
+    .welcome-page,.module-content[hidden],.chapter-article[hidden] { display:none!important; }
+    .chapter-article:not([hidden]) { display:block!important; border:0!important; padding:0!important; }
+    .chapter-article [data-chapter-panel] { display:block!important; }
+    .chapter-article,.chapter-article * { color:#1e1e1e!important; box-shadow:none!important; }
+    .chapter-title-row { margin-bottom:1rem; }
+    .key-idea,.guided-practice,.essential-card,.practice-empty { break-inside:avoid; border:1px solid #d8d3c9!important; border-radius:8px!important; background:#f5f1e8!important; padding:1rem!important; }
+    .chapter-article h2,.chapter-article h3 { break-after:avoid; }
+    .chapter-article img { max-width:100%!important; }
+    .chapter-article a { color:#1e1e1e!important; text-decoration:underline; }
   }
   :global(.dark) .reader-left { border-color:var(--color-border-dark); }
   :global(.dark) .reader-right { border-color:var(--color-border-dark); }
