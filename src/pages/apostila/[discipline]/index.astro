@@ -386,7 +386,7 @@ const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minut
   }
   @media (max-width:720px) {
     .reader-shell { display:block; padding:0 18px 48px; }
-    .reader-left { position:sticky; top:100px; z-index:10; border:0; padding:10px 0; background:var(--color-bg-light); }
+    .reader-left { position:relative; top:auto; z-index:10; border:0; padding:10px 0; background:var(--color-bg-light); }
     :global(.dark) .reader-left { background:var(--color-bg-dark); }
     .reader-left-inner { position:static; max-height:none; overflow:visible; }
     #chapter-nav { display:none; position:absolute; top:100%; left:0; right:0; max-height:55vh; overflow:auto; border:1px solid var(--color-border-light); border-radius:12px; background:var(--color-bg-light); padding:12px; box-shadow:0 10px 24px #0002; }
