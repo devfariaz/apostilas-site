@@ -1,0 +1,20 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { createSupabaseServerClient } from '../lib/supabase';
+let message = '';
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData(); const fullName = String(form.get('full_name') ?? '').trim(); const email = String(form.get('email') ?? ''); const password = String(form.get('password') ?? '');
+  if (password.length < 8) message = 'Use uma senha com pelo menos 8 caracteres.';
+  else try {
+    const supabase = createSupabaseServerClient(Astro.cookies, Astro.request);
+    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName }, emailRedirectTo: `${Astro.url.origin}/auth/callback` } });
+    if (error) message = error.message;
+    else if (data.session) {
+      const profile = await supabase.from('profiles').select('is_active').eq('id', data.user!.id).maybeSingle();
+      return Astro.redirect(profile.data?.is_active ? '/' : '/aguardando-aprovacao');
+    } else return Astro.redirect('/aguardando-aprovacao');
+  }
+  catch (error) { message = error instanceof Error ? error.message : 'Não foi possível criar a conta.'; }
+}
+---
+<BaseLayout title="Criar conta — Professor Deivid Nobre - Apostilas"><main class="mx-auto max-w-md px-5 py-16"><a href="/" class="text-sm text-text-muted-light">← Início</a><p class="mt-10 text-xs font-bold uppercase tracking-[.2em] text-accent-light">Comece seu percurso</p><h1 class="mt-2 font-display text-4xl font-semibold">Crie sua conta</h1><p class="mt-3 text-text-muted-light dark:text-text-muted-dark">Salve aulas concluídas e mantenha suas anotações.</p><form method="post" class="mt-8 space-y-4"><label class="block text-sm font-medium">Nome<input required name="full_name" autocomplete="name" class="mt-2 w-full rounded-xl border border-border-light bg-surface-light px-4 py-3 dark:border-border-dark dark:bg-surface-dark" /></label><label class="block text-sm font-medium">E-mail<input required type="email" name="email" autocomplete="email" class="mt-2 w-full rounded-xl border border-border-light bg-surface-light px-4 py-3 dark:border-border-dark dark:bg-surface-dark" /></label><label class="block text-sm font-medium">Senha<input required type="password" name="password" minlength="8" autocomplete="new-password" class="mt-2 w-full rounded-xl border border-border-light bg-surface-light px-4 py-3 dark:border-border-dark dark:bg-surface-dark" /></label>{message && <p aria-live="polite" class="text-sm text-text-muted-light">{message}</p>}<button class="w-full rounded-full bg-accent-light px-5 py-3 font-semibold text-white">Criar conta</button></form><p class="mt-6 text-sm text-text-muted-light">Já tem conta? <a class="font-semibold text-accent-light" href="/login">Entrar</a></p></main></BaseLayout>

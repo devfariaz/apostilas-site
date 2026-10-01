@@ -1,0 +1,13 @@
+<button type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border-light text-lg transition hover:bg-black/5 dark:border-border-dark dark:hover:bg-white/10" aria-label="Alternar tema" data-theme-toggle>
+  <span aria-hidden="true" data-theme-icon>☾</span>
+</button>
+<script>
+  const button = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
+  const icon = button?.querySelector<HTMLElement>('[data-theme-icon]');
+  button?.addEventListener('click', () => {
+    const isDark = document.documentElement.classList.toggle('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    icon && (icon.textContent = isDark ? '☀' : '☾');
+  });
+  if (icon) icon.textContent = document.documentElement.classList.contains('dark') ? '☀' : '☾';
+</script>

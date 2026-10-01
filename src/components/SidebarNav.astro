@@ -1,0 +1,14 @@
+---
+const { lessons = [], currentId, progress = [] } = Astro.props;
+const grouped = lessons.reduce((acc, lesson) => {
+  (acc[lesson.data.module] ??= []).push(lesson);
+  return acc;
+}, {});
+---
+<nav aria-label="Conteúdo da disciplina" class="space-y-5">
+  {Object.entries(grouped).map(([module, items]) => (
+    <section><h2 class="mb-2 px-3 text-xs font-bold uppercase tracking-widest text-text-muted-light dark:text-text-muted-dark">{module}</h2>
+      <ul class="space-y-1">{items.map((lesson: any) => { const done = progress.some((p: any) => p.lesson_slug === lesson.id && p.completed); const routeSlug = lesson.id.split('/').at(-1); return <li><a href={`/apostila/${lesson.data.discipline}/${routeSlug}`} aria-current={currentId === lesson.id ? 'page' : undefined} class={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm ${currentId === lesson.id ? 'bg-accent-light/10 font-semibold text-accent-light' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}><span class={`grid h-5 w-5 place-items-center rounded-full border text-xs ${done ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-border-light dark:border-border-dark'}`}>{done ? '✓' : ''}</span>{lesson.data.title}</a></li>; })}</ul>
+    </section>
+  ))}
+</nav>

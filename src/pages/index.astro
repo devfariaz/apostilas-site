@@ -1,0 +1,52 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+import { createSupabaseServerClient } from '../lib/supabase';
+import { disciplines, lessonPath } from '../lib/catalog';
+import LogoMark from '../components/LogoMark.astro';
+const lessons = await getCollection('apostilas');
+let subjects: { slug: string; name: string; description: string; icon?: string; sort_order?: number }[] = [...disciplines];
+let chapterCounts: Record<string, number> = {};
+let user = null; let progress: { lesson_slug: string; completed: boolean }[] = [];
+try {
+  const supabase = createSupabaseServerClient(Astro.cookies, Astro.request);
+  const { data: { user: sessionUser } } = await supabase.auth.getUser(); user = sessionUser;
+  const [subjectsResult, chaptersResult] = await Promise.all([
+    supabase.from('disciplines').select('slug,name,description,sort_order').eq('active', true).order('sort_order').order('name'),
+    supabase.from('apostilas').select('discipline_slug').eq('published', true)
+  ]);
+  if (subjectsResult.data?.length) subjects = subjectsResult.data.map((item) => ({ ...item, icon: '✳' }));
+  if (user) {
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+    if (profile?.role !== 'admin') {
+      const { data: assignments, error: assignmentError } = await supabase.from('student_disciplines').select('discipline_slug').eq('user_id', user.id);
+      if (assignmentError) throw assignmentError;
+      const assignedSlugs = new Set((assignments ?? []).map((assignment) => assignment.discipline_slug));
+      subjects = subjects.filter((item) => assignedSlugs.has(item.slug));
+    }
+  }
+  for (const item of chaptersResult.data ?? []) chapterCounts[item.discipline_slug] = (chapterCounts[item.discipline_slug] ?? 0) + 1;
+  if (user) { const result = await supabase.from('lesson_progress').select('lesson_slug,completed_at').eq('user_id', user.id); progress = (result.data ?? []).map((item) => ({ ...item, completed: true })); }
+} catch { if (user) subjects = []; /* Supabase é opcional para navegação pública. */ }
+const done = progress.filter((item) => item.completed).length;
+const totalChapters = Object.values(chapterCounts).reduce((sum, count) => sum + count, 0) || lessons.length;
+---
+<BaseLayout title="Professor Deivid Nobre - Apostilas" description="Apostilas e conteúdos de Game Design, Produção Multimídia e Marketing do Professor Deivid Nobre." user={user}>
+  <main class="mx-auto max-w-7xl px-5 py-12 lg:px-8 lg:py-20">
+    <section class="grid gap-10 rounded-[2rem] bg-[#efe8dc] p-8 dark:bg-surface-dark md:grid-cols-[1.15fr_.85fr] md:p-14">
+      <div class="flex flex-col justify-center"><p class="mb-4 text-xs font-bold uppercase tracking-[.22em] text-accent-light">Professor Deivid Nobre · Material didático</p><h1 class="max-w-2xl font-display text-5xl font-semibold leading-[1.05] tracking-tight md:text-7xl">Aprenda. Crie. Evolua.</h1><p class="mt-6 max-w-xl text-lg leading-relaxed text-text-muted-light dark:text-text-muted-dark">Aulas e referências para desenvolver suas habilidades em Game Design, Produção Multimídia e Marketing.</p><a href="#disciplinas" class="mt-8 w-fit rounded-full bg-accent-light px-6 py-3 font-semibold text-white">Explorar disciplinas <span aria-hidden="true">↗</span></a></div>
+      <div class="relative flex min-h-64 items-center justify-center overflow-hidden rounded-3xl bg-[#e4d8c5] p-6 dark:bg-[#29292e] md:p-10"><div class="chalkboard-frame w-full max-w-lg"><div class="chalkboard-surface flex min-h-56 items-center justify-center rounded-md md:min-h-72"><LogoMark class="h-32 w-32 text-white drop-shadow-[0_3px_8px_rgba(255,255,255,.18)] md:h-40 md:w-40" /></div></div></div>
+    </section>
+    {user && <section class="mt-8 flex items-center gap-5 rounded-2xl border border-border-light bg-surface-light p-5 dark:border-border-dark dark:bg-surface-dark"><div class="grid h-12 w-12 place-items-center rounded-full bg-highlight-light/20 text-xl">✦</div><div class="flex-1"><p class="font-semibold">Seu percurso</p><p class="text-sm text-text-muted-light dark:text-text-muted-dark">{done} {done === 1 ? 'aula concluída' : 'aulas concluídas'}</p></div><div class="h-2 w-32 overflow-hidden rounded-full bg-border-light dark:bg-border-dark"><div class="h-full bg-accent-light" style={`width:${totalChapters ? Math.min(100, done / totalChapters * 100) : 0}%`}></div></div></section>}
+    <section id="disciplinas" class="mt-20"><div class="mb-8 flex items-end justify-between"><div><p class="text-xs font-bold uppercase tracking-[.2em] text-accent-light">Escolha seu caminho</p><h2 class="mt-2 font-display text-4xl font-semibold">Disciplinas</h2></div><span class="hidden text-sm text-text-muted-light sm:inline dark:text-text-muted-dark">{subjects.length} áreas para explorar</span></div>
+      {user && subjects.length === 0 ? <p class="rounded-2xl border border-dashed border-border-light bg-surface-light p-8 text-center leading-relaxed text-text-muted-light dark:border-border-dark dark:bg-surface-dark dark:text-text-muted-dark">Seu cadastro ainda não tem disciplinas atribuídas. Peça ao professor para atribuir seu ano e suas disciplinas.</p> : <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{subjects.map((item, index) => { const items = lessons.filter((lesson) => lesson.data.discipline === item.slug); const count = chapterCounts[item.slug] ?? items.length; const number = String(index + 1).padStart(2, '0'); return <a href={items[0] ? lessonPath(item.slug, items[0].id) : `/apostila/${item.slug}`} class="group rounded-3xl border border-border-light bg-surface-light p-6 transition hover:-translate-y-1 hover:border-accent-light dark:border-border-dark dark:bg-surface-dark"><div class="flex items-center justify-between"><span class="grid h-12 w-12 place-items-center rounded-2xl bg-[#efe8dc] text-2xl dark:bg-bg-dark">{item.icon ?? '✳'}</span><span class="font-display text-sm text-text-muted-light dark:text-text-muted-dark">{number}</span></div><h3 class="mt-8 font-display text-2xl font-semibold group-hover:text-accent-light">{item.name}</h3><p class="mt-2 text-sm text-text-muted-light dark:text-text-muted-dark">{item.description}</p><p class="mt-6 text-xs font-semibold uppercase tracking-wider text-text-muted-light dark:text-text-muted-dark">{count} {count === 1 ? 'aula' : 'aulas'} <span class="float-right text-accent-light">↗</span></p></a>; })}</div>}
+    </section>
+    <section class="mt-20 border-t border-border-light pt-8 text-sm text-text-muted-light dark:border-border-dark dark:text-text-muted-dark">Feito para aprender com curiosidade. <span class="float-right">© {new Date().getFullYear()} Professor Deivid Nobre</span></section>
+  </main>
+</BaseLayout>
+
+<style>
+  .chalkboard-frame { border:10px solid #8b5e3c; border-radius:18px; background:linear-gradient(145deg,#ae7950,#70452f); padding:8px; box-shadow:0 16px 34px #0003, inset 0 1px 2px #ffffff55; }
+  .chalkboard-surface { position:relative; overflow:hidden; border:1px solid #ffffff15; background-color:#15382f; background-image:radial-gradient(ellipse at 30% 22%,#ffffff0a 0,transparent 40%),radial-gradient(ellipse at 75% 78%,#ffffff08 0,transparent 42%),linear-gradient(135deg,#1b4236,#102d25); box-shadow:inset 0 0 32px #071b16aa; }
+  .chalkboard-surface::after { position:absolute; inset:10px; border:1px solid #e9e2ca20; border-radius:3px; content:""; pointer-events:none; }
+</style>

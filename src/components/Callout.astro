@@ -1,0 +1,7 @@
+---
+const { variant = 'essential', title = variant === 'essential' ? 'O essencial' : 'Dica visual' } = Astro.props;
+const style = variant === 'essential' ? 'border-highlight-light bg-highlight-light/10 dark:border-highlight-dark' : 'border-accent-light bg-accent-light/5';
+---
+<aside class={`my-8 rounded-r-2xl border-l-4 p-5 ${style}`} aria-label={title}>
+  <strong class="mb-2 block font-semibold">{title}</strong><div class="leading-relaxed text-text-muted-light dark:text-text-muted-dark"><slot /></div>
+</aside>

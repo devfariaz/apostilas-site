@@ -1,0 +1,25 @@
+---
+const { discipline, lesson, initial = '' } = Astro.props;
+---
+<section class="rounded-2xl border border-border-light bg-surface-light p-5 dark:border-border-dark dark:bg-surface-dark" data-notes data-discipline={discipline} data-lesson={lesson}>
+  <label for="student-notes" class="mb-3 block font-display text-lg font-semibold">Minhas anotações</label>
+  <textarea id="student-notes" class="min-h-48 w-full resize-y rounded-xl border border-border-light bg-transparent p-3 text-sm leading-relaxed outline-none focus:border-accent-light dark:border-border-dark" placeholder="Registre uma ideia, dúvida ou referência…">{initial}</textarea>
+  <p class="mt-2 min-h-5 text-xs text-text-muted-light dark:text-text-muted-dark" aria-live="polite" data-save-state>Suas anotações são privadas.</p>
+</section>
+<script>
+  const root = document.querySelector<HTMLElement>('[data-notes]');
+  const textarea = root?.querySelector<HTMLTextAreaElement>('textarea');
+  const status = root?.querySelector<HTMLElement>('[data-save-state]');
+  let timer: ReturnType<typeof setTimeout>;
+  textarea?.addEventListener('input', () => {
+    clearTimeout(timer);
+    if (status) status.textContent = 'Salvando…';
+    timer = setTimeout(async () => {
+      try {
+        const response = await fetch('/api/notes', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ discipline_slug: root?.dataset.discipline, lesson_slug: root?.dataset.lesson, content: textarea.value }) });
+        if (!response.ok) throw new Error('Não foi possível salvar.');
+        if (status) status.textContent = 'Salvo agora';
+      } catch { if (status) status.textContent = 'Entre na sua conta para sincronizar as anotações.'; }
+    }, 700);
+  });
+</script>

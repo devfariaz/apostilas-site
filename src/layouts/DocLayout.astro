@@ -1,0 +1,14 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import SidebarNav from '../components/SidebarNav.astro';
+import NotesBlock from '../components/NotesBlock.astro';
+import MarkAsCompleted from '../components/MarkAsCompleted.astro';
+const { title, description, user, lessons, currentId, progress, discipline, lessonSlug, completed, note = '' } = Astro.props;
+---
+<BaseLayout title={`${title} — Professor Deivid Nobre - Apostilas`} description={description} user={user}>
+  <div class="mx-auto grid max-w-[1440px] gap-8 px-5 py-8 lg:grid-cols-[240px_minmax(0,1fr)_280px] lg:px-8">
+    <aside class="hidden lg:block"><div class="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto"><SidebarNav lessons={lessons} currentId={currentId} progress={progress} /></div></aside>
+    <main class="min-w-0"><div class="mx-auto max-w-3xl"><slot /><div class="mt-12 border-t border-border-light pt-6 dark:border-border-dark"><MarkAsCompleted discipline={discipline} lesson={lessonSlug} completed={completed} /></div></div></main>
+    <aside class="hidden xl:block"><div class="sticky top-24"><NotesBlock discipline={discipline} lesson={lessonSlug} initial={note} /></div></aside>
+  </div>
+</BaseLayout>

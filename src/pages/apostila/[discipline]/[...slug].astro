@@ -1,0 +1,75 @@
+---
+import { getCollection, render } from 'astro:content';
+import DocLayout from '../../../layouts/DocLayout.astro';
+import NotesBlock from '../../../components/NotesBlock.astro';
+import { createSupabaseServerClient } from '../../../lib/supabase';
+import { disciplines } from '../../../lib/catalog';
+import { marked } from 'marked';
+import sanitizeHtml from 'sanitize-html';
+export const prerender = false;
+const { discipline, slug } = Astro.params;
+const allLessons = await getCollection('apostilas');
+const staticLesson = allLessons.find((entry) => entry.data.discipline === discipline && (entry.id === slug || entry.id === `${discipline}/${slug}`));
+let disciplineName = disciplines.find((item) => item.slug === discipline)?.name ?? discipline;
+let user = null; let progress: any[] = []; let completed = false; let note = '';
+let databaseLesson: any = null;
+let databaseSiblings: any[] = [];
+try {
+  const supabase = createSupabaseServerClient(Astro.cookies, Astro.request);
+  const { data } = await supabase.auth.getUser(); user = data.user;
+  if (user) {
+    const [current, siblings, subject] = await Promise.all([
+      supabase.from('apostilas').select('*').eq('discipline_slug', discipline).eq('slug', slug).eq('published', true).maybeSingle(),
+      supabase.from('apostilas').select('slug,title,module,lesson_order,discipline_slug').eq('discipline_slug', discipline).eq('published', true).order('lesson_order'),
+      supabase.from('disciplines').select('name').eq('slug', discipline).maybeSingle()
+    ]);
+    databaseLesson = current.data; databaseSiblings = siblings.data ?? []; disciplineName = subject.data?.name ?? disciplineName;
+    const lessonId = databaseLesson?.slug ?? staticLesson?.id;
+    if (!lessonId) return Astro.redirect('/');
+    const [p, n] = await Promise.all([
+      supabase.from('lesson_progress').select('lesson_slug,completed_at').eq('user_id', user.id).eq('disciplina_slug', discipline),
+      supabase.from('user_notes').select('content').eq('user_id', user.id).eq('disciplina_slug', discipline).eq('lesson_slug', lessonId).maybeSingle()
+    ]);
+    progress = (p.data ?? []).map((item) => ({ ...item, completed: true })); completed = progress.some((item) => item.lesson_slug === lessonId); note = n.data?.content ?? '';
+  }
+} catch { /* A aula permanece legível sem configuração do Supabase. */ }
+if (!staticLesson && !databaseLesson) return Astro.redirect('/');
+const lessonId = databaseLesson?.slug ?? staticLesson!.id;
+const data = databaseLesson ? { title: databaseLesson.title, module: databaseLesson.module, summary: databaseLesson.summary, tags: databaseLesson.tags ?? [] } : staticLesson!.data;
+const Content = !databaseLesson && staticLesson ? (await render(staticLesson)).Content : null;
+const databaseNav = databaseSiblings.map((entry) => ({ id: entry.slug, data: { discipline: entry.discipline_slug, title: entry.title, module: entry.module || 'Capítulos', order: entry.lesson_order } }));
+const staticNav = allLessons.filter((entry) => entry.data.discipline === discipline && !databaseSiblings.some((item) => item.slug === entry.id.split('/').at(-1))).map((entry) => ({ id: entry.id, data: { ...entry.data, discipline: entry.data.discipline } }));
+const sameDiscipline = [...databaseNav, ...staticNav].sort((a, b) => a.data.order - b.data.order);
+const bodyHtml = databaseLesson ? sanitizeHtml(await marked.parse(databaseLesson.body_markdown ?? '')) : '';
+const practiceHtml = databaseLesson ? sanitizeHtml(await marked.parse(databaseLesson.practice_markdown ?? '')) : '';
+const essentialPoints: { title: string; description: string }[] = Array.isArray(databaseLesson?.essential_points) ? databaseLesson.essential_points : [];
+const chapterIndex = sameDiscipline.findIndex((entry) => entry.id.split('/').at(-1) === lessonId);
+const nextLesson = chapterIndex >= 0 ? sameDiscipline[chapterIndex + 1] : null;
+---
+<DocLayout title={data.title} description={data.summary} user={user} lessons={sameDiscipline} currentId={lessonId} progress={progress} discipline={discipline} lessonSlug={lessonId} completed={completed} note={note}>
+  <div class="mb-8"><a href="/" class="text-sm text-text-muted-light hover:text-accent-light dark:text-text-muted-dark">Disciplinas</a><span class="mx-2 text-text-muted-light">/</span><a href={`/apostila/${discipline}`} class="text-sm text-accent-light">{disciplineName}</a></div>
+  <p class="text-xs font-bold uppercase tracking-[.2em] text-accent-light">Módulo {data.module} <span class="mx-2 text-border-light">—</span> {disciplineName}</p><h1 class="mt-3 font-display text-4xl font-semibold leading-tight tracking-tight md:text-5xl">{data.title}</h1><p class="mt-4 text-lg leading-relaxed text-text-muted-light dark:text-text-muted-dark">{data.summary}</p><div class="mt-5 flex flex-wrap gap-4 border-b border-border-light pb-5 text-[10px] font-semibold uppercase tracking-widest text-text-muted-light dark:border-border-dark dark:text-text-muted-dark"><span>Capítulo {String(Math.max(1, chapterIndex + 1)).padStart(2, '0')} de {sameDiscipline.length}</span><span>{databaseLesson?.reading_minutes ?? 10} min de leitura</span><span>Nível {databaseLesson?.difficulty ?? 'Introdutório'}</span></div>
+  <div class="mt-8 flex flex-wrap gap-2">{data.tags.map((tag: string) => <a href={`/buscar?tag=${encodeURIComponent(tag)}`} class="rounded-full bg-black/5 px-3 py-1 text-xs hover:bg-accent-light hover:text-white dark:bg-white/10">#{tag}</a>)}</div>
+  <nav class="lesson-tabs mt-10 flex gap-6 border-b border-border-light dark:border-border-dark" role="tablist" aria-label="Conteúdo do capítulo"><button type="button" role="tab" aria-selected="true" aria-controls="lesson-reading" id="lesson-tab-reading">Aula</button><button type="button" role="tab" aria-selected="false" aria-controls="lesson-practice" id="lesson-tab-practice">Prática guiada</button></nav>
+  <section id="lesson-reading" role="tabpanel" aria-labelledby="lesson-tab-reading">
+    {databaseLesson?.key_idea && <blockquote class="my-8 rounded-2xl bg-surface-light p-6 font-display text-xl font-semibold leading-relaxed dark:bg-surface-dark"><span class="mr-2 text-3xl text-accent-light">“</span>{databaseLesson.key_idea}<span class="text-accent-light">”</span></blockquote>}
+    <article class="prose prose-lg mt-8 max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-accent-light dark:prose-invert">{databaseLesson ? <Fragment set:html={bodyHtml} /> : Content && <Content />}</article>
+    {essentialPoints.length > 0 && <section class="my-10 rounded-2xl bg-highlight-light p-6 text-text-main-light dark:bg-highlight-dark"><p class="text-xs font-bold uppercase tracking-[.18em] text-accent-light">Hora de memorizar</p><h2 class="mt-2 font-display text-3xl font-semibold">O essencial deste capítulo</h2><ol class="mt-5 grid gap-4 sm:grid-cols-2">{essentialPoints.map((point, index) => <li class="flex gap-3"><span class="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-black/30 text-xs">{index + 1}</span><span><strong class="block text-sm">{point.title}</strong><small class="mt-1 block leading-relaxed">{point.description}</small></span></li>)}</ol></section>}
+  </section>
+  <section id="lesson-practice" role="tabpanel" aria-labelledby="lesson-tab-practice" hidden class="practice-panel mt-8 rounded-2xl bg-[#e9e5da] p-6 dark:bg-surface-dark md:p-8"><p class="text-xs font-bold uppercase tracking-[.18em] text-accent-light">Guia de bancada</p><h2 class="mt-2 font-display text-3xl font-semibold">{databaseLesson?.shortcut_label ? `Prática: ${databaseLesson.shortcut_label}` : 'Prática guiada'}</h2><p class="mt-3 text-sm leading-relaxed text-text-muted-light dark:text-text-muted-dark">Execute as etapas na ordem indicada e confira o resultado antes de avançar.</p><article class="prose mt-8 max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-accent-light dark:prose-invert">{practiceHtml && <Fragment set:html={practiceHtml} />}</article></section>
+  {(databaseLesson?.shortcuts?.length || databaseLesson?.shortcut_keys) && <aside class="mt-6 rounded-2xl bg-surface-light p-5 dark:bg-surface-dark"><p class="text-xs font-bold uppercase tracking-widest text-accent-light">Atalhos da aula</p><div class="mt-3 space-y-3">{(databaseLesson.shortcuts?.length ? databaseLesson.shortcuts : [{ keys: databaseLesson.shortcut_keys, label: databaseLesson.shortcut_label }]).map((shortcut: { keys: string; label: string }) => <div><p class="font-mono text-sm"><kbd class="rounded border border-border-light px-2 py-1 dark:border-border-dark">{shortcut.keys}</kbd></p><p class="mt-2 text-sm font-semibold">{shortcut.label}</p></div>)}</div></aside>}
+  {nextLesson && <a class="mt-6 block rounded-2xl bg-accent-light p-6 text-white" href={`/apostila/${discipline}/${nextLesson.id.split('/').at(-1)}`}><span class="text-[10px] font-bold uppercase tracking-widest">Próximo capítulo</span><strong class="mt-2 block font-display text-xl">{nextLesson.data.title}</strong></a>}
+  <div class="mt-8 xl:hidden"><NotesBlock discipline={discipline} lesson={lessonId} initial={note} /></div>
+</DocLayout>
+
+<script>
+  const lessonTabs = [...document.querySelectorAll<HTMLButtonElement>('.lesson-tabs [role="tab"]')];
+  lessonTabs.forEach((tab) => tab.addEventListener('click', () => { lessonTabs.forEach((item) => { const selected = item === tab; item.setAttribute('aria-selected', String(selected)); const panel = document.getElementById(item.getAttribute('aria-controls')!); if (panel) panel.hidden = !selected; }); }));
+</script>
+<style>
+  .lesson-tabs [role="tab"] { padding:.7rem .25rem; border-bottom:2px solid transparent; font-size:.72rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; }
+  .lesson-tabs [role="tab"][aria-selected="true"] { border-color:var(--color-accent-light); color:var(--color-accent-light); }
+  #lesson-reading[hidden], #lesson-practice[hidden] { display:none; }
+  .practice-panel :global(blockquote) { border-left:3px solid #e8b931; background:#fffdf7; padding:.8rem 1rem; font-size:.9rem; }
+  .practice-panel :global(ol > li::marker) { color:var(--color-accent-light); font-weight:700; }
+</style>

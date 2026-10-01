@@ -1,0 +1,365 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { createSupabaseServerClient } from '../../../lib/supabase';
+import { disciplines } from '../../../lib/catalog';
+import { marked } from 'marked';
+import sanitizeHtml from 'sanitize-html';
+export const prerender = false;
+const { discipline } = Astro.params;
+let user = null;
+let subject: any = disciplines.find((item) => item.slug === discipline) ?? null;
+let modules: any[] = [];
+let lessons: any[] = [];
+let completedLessons = new Set<string>();
+try {
+  const supabase = createSupabaseServerClient(Astro.cookies, Astro.request);
+  const { data: auth } = await supabase.auth.getUser(); user = auth.user;
+  const [d, m, l, p] = await Promise.all([
+    supabase.from('disciplines').select('*').eq('slug', discipline).eq('active', true).maybeSingle(),
+    supabase.from('modules').select('*').eq('discipline_slug', discipline).order('sort_order'),
+    supabase.from('apostilas').select('*').eq('discipline_slug', discipline).eq('published', true).order('lesson_order'),
+    user ? supabase.from('lesson_progress').select('lesson_slug').eq('user_id', user.id).eq('disciplina_slug', discipline) : Promise.resolve({ data: [] })
+  ]);
+  if (d.data) subject = d.data;
+  modules = m.data ?? [];
+  lessons = l.data ?? [];
+  completedLessons = new Set((p.data ?? []).map((row: any) => row.lesson_slug));
+} catch { /* A navegação permanece acessível e informa quando não há conteúdo publicado. */ }
+if (!subject) return Astro.redirect('/');
+const chapterModules = modules.map((module) => ({ ...module, lessons: lessons.filter((lesson) => lesson.module_id === module.id || lesson.module === module.name) }));
+const withoutModule = lessons.filter((lesson) => !lesson.module_id && !modules.some((module) => module.name === lesson.module));
+const renderMarkdown = async (markdown: string) => sanitizeHtml(await marked.parse(markdown ?? ''));
+const shortcutsFromPractice = (markdown: string): { keys: string; label: string }[] => {
+  const found = new Map<string, string>();
+  const patterns = [
+    /\b(?:Ctrl|Alt|Shift|Cmd|Command)(?:\s*\+\s*(?:Ctrl|Alt|Shift|Cmd|Command))*\s*\+\s*[A-Za-zÀ-ÿ0-9]+(?:\s*\+\s*[A-Za-zÀ-ÿ0-9]+)*/gi,
+    /\bF(?:[1-9]|1[0-2])\b/gi,
+    /\b(?:tecla|atalho)\s+([A-Z])\b/gi,
+    /\bBarra de Espaço\b/gi,
+  ];
+  for (const line of markdown.split(/\r?\n/)) for (const pattern of patterns) {
+    pattern.lastIndex = 0;
+    for (const match of line.matchAll(pattern)) {
+      const keys = (match[1] && /tecla|atalho/i.test(match[0]) ? match[1] : match[0]).replace(/\s*\+\s*/g, ' + ').trim();
+      const key = keys.toLocaleLowerCase('pt-BR');
+      if (found.has(key)) continue;
+      const prefix = line.slice(0, match.index ?? 0);
+      const tool = [...prefix.matchAll(/\b(?:Ferramenta|Painel)\s+[^(),.;]+/gi)].at(-1)?.[0]?.trim();
+      const rest = line.slice((match.index ?? 0) + match[0].length).replace(/[*_`]/g, '').trim();
+      const annotation = rest.match(/^\s*\(([^)]+)\)/)?.[1]?.trim();
+      const action = rest.replace(/^\s*[):,;—–-]+\s*/, '').replace(/^para\s+/i, '').split(/[.!?,;\n]/, 1)[0]?.trim();
+      const label = tool ?? annotation ?? action;
+      found.set(key, label ? label.slice(0, 120) : 'Usado na prática guiada');
+    }
+  }
+  return [...found].slice(0, 12).map(([keys, label]) => ({ keys, label }));
+};
+for (const lesson of lessons) {
+  lesson.body_html = await renderMarkdown(lesson.body_markdown);
+  lesson.practice_html = await renderMarkdown(lesson.practice_markdown);
+  if (!lesson.shortcuts?.length && !lesson.shortcut_keys && lesson.practice_markdown) lesson.shortcuts = shortcutsFromPractice(lesson.practice_markdown);
+}
+for (const module of chapterModules) module.lessons = lessons.filter((lesson) => lesson.module_id === module.id || lesson.module === module.name);
+for (let i = 0; i < withoutModule.length; i++) {
+  withoutModule[i].body_html = lessons.find((lesson) => lesson.slug === withoutModule[i].slug)?.body_html ?? '';
+  withoutModule[i].practice_html = lessons.find((lesson) => lesson.slug === withoutModule[i].slug)?.practice_html ?? '';
+}
+const chapterCount = lessons.length;
+const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minutes ?? 10), 0);
+---
+<BaseLayout title={`${subject.name} — Professor Deivid Nobre - Apostilas`} description={subject.description} user={user}>
+  <div class="reader-shell">
+    <aside class="reader-left"><div class="reader-left-inner">
+      <div class="mb-5"><p class="text-[10px] font-bold uppercase tracking-[.18em] text-text-muted-light dark:text-text-muted-dark">Seu percurso</p><div class="mt-3 h-1.5 overflow-hidden rounded-full bg-black/10 dark:bg-white/10"><div class="h-full rounded-full bg-accent-light" style={`width:${chapterCount ? Math.round(completedLessons.size / chapterCount * 100) : 0}%`}></div></div><p class="mt-2 text-[10px] text-text-muted-light dark:text-text-muted-dark">{chapterCount ? Math.round(completedLessons.size / chapterCount * 100) : 0}% concluído</p></div>
+      <label class="relative block"><span class="sr-only">Encontrar capítulo neste módulo</span><span aria-hidden="true" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light">⌕</span><input id="chapter-filter" class="w-full rounded-lg border border-border-light bg-surface-light py-2 pl-9 pr-3 text-xs outline-none focus:border-accent-light dark:border-border-dark dark:bg-surface-dark" placeholder="Encontrar capítulo" /></label>
+      <nav id="chapter-nav" class="mt-5 space-y-4" aria-label="Módulos e capítulos">
+        <a id="welcome-nav" href="#bem-vindo" class="welcome-nav-link"><span class="welcome-nav-icon">✳</span><span><strong>Bem-vindo</strong><small>Sobre esta disciplina</small></span></a>
+        {chapterModules.map((module, index) => <details class="module-group"><summary class="flex cursor-pointer list-none items-start gap-2 border-b border-border-light pb-3 dark:border-border-dark"><span class="font-display text-lg text-accent-light">{String(index + 1).padStart(2, '0')}</span><span class="min-w-0 flex-1"><strong class="block text-xs">{module.name}</strong><small class="text-[10px] text-text-muted-light dark:text-text-muted-dark">{module.lessons.length} capítulos</small></span><span aria-hidden="true" class="text-text-muted-light">⌄</span></summary><ul class="ml-3 mt-2 space-y-1 border-l border-border-light pl-2 dark:border-border-dark">{module.lessons.map((lesson: any) => <li data-search-item data-search-text={`${lesson.title} ${module.name} ${(lesson.tags ?? []).join(' ')}`}><a data-select-chapter class="flex items-start gap-2 rounded-md px-2 py-2 text-[11px] leading-snug text-text-muted-light hover:bg-black/5 hover:text-accent-light dark:text-text-muted-dark dark:hover:bg-white/5" href={`#${lesson.slug}`}><span class="w-4 shrink-0 font-mono text-[9px]">{completedLessons.has(lesson.slug) ? '✓' : String(lesson.lesson_order + 1).padStart(2, '0')}</span><span>{lesson.title}</span></a></li>)}</ul></details>)}
+        {withoutModule.length > 0 && <details class="module-group"><summary class="flex cursor-pointer list-none items-start gap-2 border-b border-border-light pb-3 dark:border-border-dark"><span class="font-display text-lg text-accent-light">{String(chapterModules.length + 1).padStart(2, '0')}</span><span class="min-w-0 flex-1"><strong class="block text-xs">Capítulos</strong><small class="text-[10px] text-text-muted-light dark:text-text-muted-dark">{withoutModule.length} capítulos</small></span></summary><ul class="ml-3 mt-2 space-y-1 border-l border-border-light pl-2 dark:border-border-dark">{withoutModule.map((lesson: any) => <li data-search-item data-search-text={`${lesson.title} ${(lesson.tags ?? []).join(' ')}`}><a data-select-chapter class="flex gap-2 rounded-md px-2 py-2 text-[11px] text-text-muted-light hover:text-accent-light dark:text-text-muted-dark" href={`#${lesson.slug}`}><span class="font-mono text-[9px]">{String(lesson.lesson_order + 1).padStart(2, '0')}</span>{lesson.title}</a></li>)}</ul></details>}
+      </nav>
+      <blockquote class="mt-7 rounded-xl bg-[#14231e] p-4 text-white"><span class="text-highlight-light">✳</span><p class="mt-2 font-display text-sm leading-relaxed">“Aprenda um capítulo de cada vez. Cada ideia abre caminho para a próxima.”</p><cite class="mt-2 block text-[9px] text-white/60">Seu percurso de aprendizagem</cite></blockquote>
+    </div></aside>
+
+    <main class="reader-main">
+      <section id="bem-vindo" class="welcome-page scroll-mt-24" aria-label={`Bem-vindo à disciplina ${subject.name}`}>
+      <header class="discipline-hero"><div class="welcome-label"><span class="welcome-icon">✳</span><span><small>APOSTILA DIGITAL</small><strong>Bem-vindo à disciplina</strong></span></div><h1 class="mt-4 font-display text-5xl font-semibold leading-[1.05] tracking-tight md:text-6xl">{subject.name}</h1><div class="mt-7 flex flex-wrap gap-4 text-[10px] font-semibold uppercase tracking-widest text-text-muted-light dark:text-text-muted-dark"><span><strong class="text-accent-light">{String(chapterCount).padStart(2, '0')}</strong> capítulos</span><span>{totalMinutes} min de leitura</span><span>Material de estudo</span></div></header>
+      <section class="learning-outcomes" aria-label="Sobre a disciplina">
+        <article class="outcome-card description-card"><p class="text-[10px] font-bold uppercase tracking-[.18em] text-accent-light">Conheça a disciplina</p><h2 class="mt-2 font-display text-xl font-semibold">Descrição</h2><p class="mt-4 text-sm leading-relaxed text-text-muted-light dark:text-text-muted-dark">{subject.description || 'A apresentação desta disciplina será adicionada pelo professor.'}</p></article>
+        <article class="outcome-card"><p class="text-[10px] font-bold uppercase tracking-[.18em] text-accent-light">Na prática</p><h2 class="mt-2 font-display text-xl font-semibold">Habilidades</h2>{subject.skills?.length ? <ul class="mt-4 space-y-2">{subject.skills.map((skill: string) => <li class="flex gap-2 text-sm leading-relaxed"><span class="text-accent-light">↗</span><span>{skill}</span></li>)}</ul> : <p class="mt-4 text-sm leading-relaxed text-text-muted-light dark:text-text-muted-dark">As habilidades serão adicionadas pelo professor.</p>}</article>
+        <article class="outcome-card outcome-card-dark"><p class="text-[10px] font-bold uppercase tracking-[.18em] text-highlight-light">Ao final</p><h2 class="mt-2 font-display text-xl font-semibold">Competências</h2>{subject.competencies?.length ? <ul class="mt-4 space-y-2">{subject.competencies.map((competency: string) => <li class="flex gap-2 text-sm leading-relaxed"><span class="text-highlight-light">✳</span><span>{competency}</span></li>)}</ul> : <p class="mt-4 text-sm leading-relaxed text-white/70">As competências serão adicionadas pelo professor.</p>}</article>
+      </section>
+      {chapterModules.length > 0 && <section class="module-picker" aria-label="Escolha um módulo e capítulo"><div class="flex flex-wrap items-end justify-between gap-3"><div><p class="text-[10px] font-bold uppercase tracking-[.18em] text-accent-light">Por onde começar</p><h2 class="mt-1 font-display text-2xl font-semibold">Escolha um módulo</h2></div><p class="text-xs text-text-muted-light dark:text-text-muted-dark">Abra um módulo para ver seus capítulos.</p></div><div class="mt-4 grid gap-2">{chapterModules.map((module, index) => <details class="module-choice"><summary><span class="module-choice-number">{String(index + 1).padStart(2, '0')}</span><span class="min-w-0 flex-1"><strong>{module.name}</strong><small>{module.lessons.length} capítulos</small></span><span class="module-choice-chevron" aria-hidden="true">⌄</span></summary><div class="module-choice-lessons">{module.lessons.length ? module.lessons.map((lesson: any) => <a data-select-chapter href={`#${lesson.slug}`}><span>{String(lesson.lesson_order + 1).padStart(2, '0')}</span><strong>{lesson.title}</strong><span aria-hidden="true">↗</span></a>) : <p class="p-4 text-sm text-text-muted-light dark:text-text-muted-dark">Os capítulos deste módulo serão publicados em breve.</p>}</div></details>)}</div></section>}
+      </section>
+      {chapterModules.map((module, moduleIndex) => <section class="module-content" aria-label={module.name} hidden><div class="module-heading"><span class="text-xs font-bold uppercase tracking-widest text-accent-light">Módulo {String(moduleIndex + 1).padStart(2, '0')}</span><span class="mx-2 h-px w-8 bg-border-light dark:bg-border-dark"></span><span class="text-xs font-bold uppercase tracking-widest">{module.name.replace(/^m[oó]dulo\s+[^:]+:\s*/i, '')}</span></div>
+        {module.lessons.map((lesson: any, lessonIndex: number) => <article id={lesson.slug} data-chapter data-lesson={lesson.slug} data-title={lesson.title} class="chapter-article scroll-mt-24" hidden>
+          <div class="chapter-title-row"><span>{String(lesson.lesson_order + 1).padStart(2, '0')}</span><h2 data-chapter-title class="font-display text-3xl font-semibold leading-tight">{lesson.title}</h2></div>
+          {lesson.summary && <p class="mb-6 ml-12 text-sm leading-relaxed text-text-muted-light dark:text-text-muted-dark">{lesson.summary}</p>}
+          <div class="chapter-tabs" role="tablist" aria-label={`Conteúdo de ${lesson.title}`}><button type="button" id={`${lesson.slug}-theory-tab`} role="tab" aria-selected="true" aria-controls={`${lesson.slug}-theory`} data-chapter-tab="theory">Teoria</button><button type="button" id={`${lesson.slug}-practice-tab`} role="tab" aria-selected="false" aria-controls={`${lesson.slug}-practice`} data-chapter-tab="practice">Guia de bancada</button></div>
+          <section id={`${lesson.slug}-theory`} role="tabpanel" aria-labelledby={`${lesson.slug}-theory-tab`} data-chapter-panel="theory">
+            {lesson.key_idea && <blockquote class="key-idea"><span class="text-5xl font-display leading-none text-accent-light">“</span><p>{lesson.key_idea}</p></blockquote>}
+            <article class="prose prose-base mt-7 max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-accent-light dark:prose-invert" set:html={lesson.body_html}></article>
+            {lesson.essential_points?.length > 0 && <section class="essential-card"><p class="text-[10px] font-bold uppercase tracking-[.18em] text-accent-light">Hora de memorizar</p><h3 class="mt-2 font-display text-3xl font-semibold">O essencial deste capítulo</h3><ol class="mt-5 grid gap-4 sm:grid-cols-2">{lesson.essential_points.map((point: any, index: number) => <li class="flex gap-3"><span class="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-black/30 text-xs">{index + 1}</span><span><strong class="block text-sm">{point.title}</strong><small class="mt-1 block leading-relaxed">{point.description}</small></span></li>)}</ol></section>}
+            <div class="mt-6"><button type="button" data-complete data-discipline={discipline} data-lesson={lesson.slug} data-completed={String(completedLessons.has(lesson.slug))} class="complete-button"><span>{completedLessons.has(lesson.slug) ? '✓' : '○'}</span><span>{completedLessons.has(lesson.slug) ? 'Aula concluída' : 'Marcar como concluído'}</span></button></div>
+          </section>
+          <section id={`${lesson.slug}-practice`} role="tabpanel" aria-labelledby={`${lesson.slug}-practice-tab`} data-chapter-panel="practice" hidden>
+            {lesson.practice_markdown ? <section class="guided-practice"><p class="text-[10px] font-bold uppercase tracking-[.18em] text-accent-light">Guia de bancada</p><h3 class="mt-2 font-display text-3xl font-semibold">{lesson.shortcuts?.[0]?.label ? `Prática: ${lesson.shortcuts[0].label}` : 'Prática guiada'}</h3><p class="mt-2 text-sm text-text-muted-light dark:text-text-muted-dark">Execute as etapas na ordem indicada e confira o resultado antes de avançar.</p><article class="prose prose-sm mt-6 max-w-none prose-headings:font-display prose-headings:font-semibold prose-blockquote:border-l-highlight-light prose-blockquote:bg-white/60 prose-blockquote:px-4 prose-blockquote:py-1 dark:prose-invert dark:prose-blockquote:bg-black/10" set:html={lesson.practice_html}></article></section> : <div class="practice-empty"><span aria-hidden="true">✳</span><h3>Guia de bancada em preparação</h3><p>O professor ainda não adicionou uma atividade prática para este capítulo.</p></div>}
+          </section>
+          {lessonIndex < module.lessons.length - 1 && <a data-select-chapter href={`#${module.lessons[lessonIndex + 1].slug}`} class="next-chapter"><span class="text-[9px] font-bold uppercase tracking-widest">Próximo capítulo</span><strong class="mt-1 block font-display text-lg">{module.lessons[lessonIndex + 1].title}</strong><span aria-hidden="true" class="absolute right-5 top-1/2 -translate-y-1/2 rounded-full border border-white/40 px-3 py-2">›</span></a>}
+        </article>)}
+      </section>)}
+      {withoutModule.length > 0 && <section class="module-content" hidden><div class="module-heading"><span class="text-xs font-bold uppercase tracking-widest text-accent-light">Conteúdo</span><span class="mx-2 h-px w-8 bg-border-light"></span><span class="text-xs font-bold uppercase tracking-widest">Capítulos</span></div>{withoutModule.map((lesson: any) => <article id={lesson.slug} data-chapter data-lesson={lesson.slug} data-title={lesson.title} class="chapter-article scroll-mt-24" hidden><div class="chapter-title-row"><span>{String(lesson.lesson_order + 1).padStart(2, '0')}</span><h2 data-chapter-title class="font-display text-3xl font-semibold">{lesson.title}</h2></div><div class="chapter-tabs" role="tablist" aria-label={`Conteúdo de ${lesson.title}`}><button type="button" id={`${lesson.slug}-theory-tab`} role="tab" aria-selected="true" aria-controls={`${lesson.slug}-theory`} data-chapter-tab="theory">Teoria</button><button type="button" id={`${lesson.slug}-practice-tab`} role="tab" aria-selected="false" aria-controls={`${lesson.slug}-practice`} data-chapter-tab="practice">Guia de bancada</button></div><section id={`${lesson.slug}-theory`} role="tabpanel" aria-labelledby={`${lesson.slug}-theory-tab`} data-chapter-panel="theory"><article class="prose mt-7 max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-accent-light dark:prose-invert" set:html={lesson.body_html}></article><button type="button" data-complete data-discipline={discipline} data-lesson={lesson.slug} data-completed={String(completedLessons.has(lesson.slug))} class="complete-button mt-6"><span>{completedLessons.has(lesson.slug) ? '✓' : '○'}</span><span>{completedLessons.has(lesson.slug) ? 'Aula concluída' : 'Marcar como concluído'}</span></button></section><section id={`${lesson.slug}-practice`} role="tabpanel" aria-labelledby={`${lesson.slug}-practice-tab`} data-chapter-panel="practice" hidden><div class="practice-empty"><span aria-hidden="true">✳</span><h3>Guia de bancada em preparação</h3><p>O professor ainda não adicionou uma atividade prática para este capítulo.</p></div></section></article>)}</section>}
+      {chapterCount === 0 && <p class="rounded-2xl border border-dashed border-border-light p-8 text-center text-text-muted-light dark:border-border-dark dark:text-text-muted-dark">Ainda não há capítulos publicados nesta disciplina.</p>}
+    </main>
+
+    <aside class="reader-right"><div class="reader-right-inner"><section id="notes-panel" class="note-panel" hidden><div class="flex items-center gap-2"><span aria-hidden="true">▤</span><p class="text-[10px] font-bold uppercase tracking-widest">Minhas notas</p></div><p id="active-chapter-title" class="mt-2 truncate text-xs text-text-muted-light dark:text-text-muted-dark"></p><textarea id="lesson-note" class="note-editor mt-3 min-h-40 w-full resize-y rounded-xl border border-border-light bg-surface-light p-3 text-sm leading-relaxed outline-none transition focus:border-accent-light focus:ring-2 focus:ring-accent-light/15 dark:border-border-dark dark:bg-surface-dark" placeholder="Registre uma ideia, dúvida ou atalho…" disabled></textarea><div class="mt-3 grid gap-2"><p id="note-state" class="text-[10px] text-text-muted-light dark:text-text-muted-dark" aria-live="polite">Suas anotações são privadas.</p><button id="save-note" type="button" class="note-save-button" disabled><span aria-hidden="true">↥</span><span>Salvar minhas notas</span></button></div><p class="mt-2 text-[9px] text-text-muted-light dark:text-text-muted-dark">Salve quando terminar de escrever.</p></section><section id="shortcuts-panel" class="shortcut-panel mt-6 rounded-2xl bg-[#e9e5da] p-4 dark:bg-surface-dark" hidden><p class="text-[9px] font-bold uppercase tracking-widest text-accent-light">Atalhos da aula</p><div id="active-shortcuts" class="mt-3 text-xs text-text-muted-light dark:text-text-muted-dark"></div></section><a id="practice-shortcut" href="#" class="mt-3 hidden items-center gap-3 rounded-xl bg-[#14231e] p-4 text-white"><span class="grid h-8 w-8 place-items-center rounded-full bg-highlight-light text-black">▶</span><span><small class="block text-[8px] uppercase tracking-widest text-white/60">Prática guiada</small><strong class="text-xs">Ir para o exercício</strong></span></a><p id="reader-panel-hint" class="rounded-xl border border-dashed border-border-light p-4 text-xs leading-relaxed text-text-muted-light dark:border-border-dark dark:text-text-muted-dark">Clique em um capítulo no sumário para abrir os atalhos e suas notas pessoais.</p></div></aside>
+  </div>
+</BaseLayout>
+
+<script type="application/json" id="chapter-data" set:html={JSON.stringify({ discipline, chapters: lessons.map((lesson) => ({ slug: lesson.slug, shortcuts: lesson.shortcuts ?? (lesson.shortcut_keys ? [{ keys: lesson.shortcut_keys, label: lesson.shortcut_label }] : []), hasPractice: Boolean(lesson.practice_markdown) })) }).replace(/</g, '\\u003c')}></script>
+<script>
+  const pageData = JSON.parse(document.querySelector('#chapter-data')?.textContent ?? '{"discipline":"","chapters":[]}');
+  const { discipline, chapters: chapterData } = pageData;
+  const chapters = [...document.querySelectorAll<HTMLElement>('[data-chapter]')];
+  const note = document.querySelector<HTMLTextAreaElement>('#lesson-note');
+  const saveNoteButton = document.querySelector<HTMLButtonElement>('#save-note');
+  const noteState = document.querySelector<HTMLElement>('#note-state');
+  const activeTitle = document.querySelector<HTMLElement>('#active-chapter-title');
+  const shortcutList = document.querySelector<HTMLElement>('#active-shortcuts');
+  const notePanel = document.querySelector<HTMLElement>('#notes-panel');
+  const shortcutsPanel = document.querySelector<HTMLElement>('#shortcuts-panel');
+  const panelHint = document.querySelector<HTMLElement>('#reader-panel-hint');
+  const practiceLink = document.querySelector<HTMLAnchorElement>('#practice-shortcut');
+  const welcomeNav = document.querySelector<HTMLAnchorElement>('#welcome-nav');
+  const welcomePage = document.querySelector<HTMLElement>('#bem-vindo');
+  const chapterBySlug = new Map(chapterData.map((item) => [item.slug, item]));
+  let activeSlug = '';
+  let noteDirty = false;
+  let loadCounter = 0;
+  async function activateChapter(chapter: HTMLElement) {
+    const slug = chapter.dataset.lesson ?? '';
+    if (!slug || slug === activeSlug) return;
+    if (noteDirty && !confirm('Sua anotação ainda não foi salva. Descartar as alterações?')) return;
+    noteDirty = false;
+    history.replaceState(null, '', `#${slug}`);
+    activeSlug = slug;
+    if (welcomePage) welcomePage.hidden = true;
+    // Cada módulo contém vários capítulos. O módulo deve ser mostrado uma
+    // única vez para o capítulo selecionado, depois de ocultarmos os demais.
+    document.querySelectorAll<HTMLElement>('.module-content').forEach((module) => { module.hidden = true; });
+    chapters.forEach((item) => {
+      const selected = item === chapter;
+      item.hidden = !selected;
+    });
+    chapter.closest<HTMLElement>('.module-content')?.removeAttribute('hidden');
+    if (notePanel) notePanel.hidden = false;
+    if (shortcutsPanel) shortcutsPanel.hidden = false;
+    if (panelHint) panelHint.hidden = true;
+    welcomeNav?.classList.remove('selected-chapter-link');
+    document.querySelectorAll<HTMLAnchorElement>('#chapter-nav a[href^="#"]').forEach((link) => {
+      const selected = link.getAttribute('href') === `#${slug}`;
+      link.classList.toggle('selected-chapter-link', selected);
+      if (selected) link.setAttribute('aria-current', 'true'); else link.removeAttribute('aria-current');
+    });
+    if (activeTitle) activeTitle.textContent = chapter.dataset.title ?? 'Minhas notas';
+    const details = chapterBySlug.get(slug);
+    if (shortcutList) {
+      shortcutList.replaceChildren();
+      if (details?.shortcuts.length) details.shortcuts.forEach((shortcut) => {
+        const item = document.createElement('div'); item.className = 'mb-3 last:mb-0';
+        const keys = document.createElement('kbd'); keys.className = 'rounded border border-border-light px-2 py-1 font-mono text-[10px] dark:border-border-dark'; keys.textContent = shortcut.keys;
+        const label = document.createElement('p'); label.className = 'mt-2 font-semibold'; label.textContent = shortcut.label;
+        item.append(keys, label); shortcutList.append(item);
+      });
+      else shortcutList.textContent = 'Nenhum atalho cadastrado para este capítulo.';
+    }
+    if (practiceLink) { practiceLink.href = `#${slug}-practice`; practiceLink.classList.toggle('hidden', !details?.hasPractice); practiceLink.classList.toggle('flex', Boolean(details?.hasPractice)); }
+    if (!note) return;
+    const requestId = ++loadCounter;
+    note.disabled = true; note.value = ''; if (noteState) noteState.textContent = 'Carregando suas anotações…';
+    try {
+      const response = await fetch(`/api/notes?discipline=${encodeURIComponent(discipline)}&lesson=${encodeURIComponent(slug)}`);
+      if (!response.ok) throw new Error('Entre para sincronizar suas anotações.');
+      const result = await response.json();
+      if (requestId !== loadCounter) return;
+      note.value = result.note?.content ?? ''; note.disabled = false;
+      noteDirty = false;
+      if (saveNoteButton) saveNoteButton.disabled = true;
+      if (noteState) noteState.textContent = note.value ? 'Anotação sincronizada.' : 'Suas anotações são privadas.';
+    } catch (error) { if (noteState) noteState.textContent = error instanceof Error ? error.message : 'Não foi possível carregar as notas.'; }
+  }
+  chapters.forEach((chapter) => {
+    const tabs = [...chapter.querySelectorAll<HTMLButtonElement>('[data-chapter-tab]')];
+    const panels = [...chapter.querySelectorAll<HTMLElement>('[data-chapter-panel]')];
+    tabs.forEach((tab) => tab.addEventListener('click', () => {
+      const selected = tab.dataset.chapterTab;
+      tabs.forEach((item) => {
+        const isSelected = item === tab;
+        item.setAttribute('aria-selected', String(isSelected));
+        item.tabIndex = isSelected ? 0 : -1;
+      });
+      panels.forEach((panel) => { panel.hidden = panel.dataset.chapterPanel !== selected; });
+    }));
+  });
+  practiceLink?.addEventListener('click', (event) => {
+    const slug = activeSlug;
+    const chapter = chapters.find((item) => item.dataset.lesson === slug);
+    if (!chapter) return;
+    event.preventDefault();
+    chapter.querySelector<HTMLButtonElement>('[data-chapter-tab="practice"]')?.click();
+    chapter.querySelector<HTMLElement>('[data-chapter-panel="practice"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  document.querySelectorAll<HTMLAnchorElement>('[data-select-chapter][href^="#"]').forEach((link) => link.addEventListener('click', () => {
+    const slug = link.getAttribute('href')?.slice(1);
+    const chapter = chapters.find((item) => item.dataset.lesson === slug);
+    if (chapter) activateChapter(chapter);
+  }));
+  welcomeNav?.addEventListener('click', () => {
+    if (noteDirty && !confirm('Sua anotação ainda não foi salva. Descartar as alterações?')) return;
+    noteDirty = false;
+    activeSlug = '';
+    loadCounter++;
+    if (welcomePage) welcomePage.hidden = false;
+    document.querySelectorAll<HTMLElement>('.module-content').forEach((module) => { module.hidden = true; });
+    chapters.forEach((chapter) => { chapter.hidden = true; });
+    if (notePanel) notePanel.hidden = true;
+    if (shortcutsPanel) shortcutsPanel.hidden = true;
+    if (practiceLink) practiceLink.classList.add('hidden');
+    if (panelHint) panelHint.hidden = false;
+    welcomeNav.classList.add('selected-chapter-link');
+    document.querySelectorAll<HTMLAnchorElement>('#chapter-nav a[href^="#"]').forEach((link) => { link.classList.remove('selected-chapter-link'); link.removeAttribute('aria-current'); });
+  });
+  chapters.forEach((chapter) => chapter.querySelector<HTMLElement>('[data-chapter-title]')?.addEventListener('click', () => activateChapter(chapter)));
+  const hashChapter = chapters.find((chapter) => chapter.dataset.lesson === decodeURIComponent(location.hash.slice(1)));
+  if (hashChapter) activateChapter(hashChapter);
+  note?.addEventListener('input', () => {
+    noteDirty = true;
+    if (saveNoteButton) saveNoteButton.disabled = note.disabled;
+    if (noteState) noteState.textContent = 'Alterações não salvas.';
+  });
+  saveNoteButton?.addEventListener('click', async () => {
+    const slug = activeSlug;
+    if (!slug || !note || note.disabled) return;
+    saveNoteButton.disabled = true; saveNoteButton.querySelectorAll('span')[1].textContent = 'Salvando…';
+    if (noteState) noteState.textContent = 'Salvando sua anotação…';
+    try {
+      const response = await fetch('/api/notes', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ discipline_slug: discipline, lesson_slug: slug, content: note.value }) });
+      if (!response.ok) throw new Error('Não foi possível salvar sua anotação.');
+      noteDirty = false;
+      if (slug === activeSlug && noteState) noteState.textContent = 'Anotação salva.';
+    } catch (error) {
+      if (slug === activeSlug && noteState) noteState.textContent = error instanceof Error ? error.message : 'Não foi possível salvar sua anotação.';
+    } finally {
+      saveNoteButton.querySelectorAll('span')[1].textContent = 'Salvar minhas notas';
+      if (slug === activeSlug) saveNoteButton.disabled = !noteDirty;
+    }
+  });
+  const filter = document.querySelector<HTMLInputElement>('#chapter-filter');
+  filter?.addEventListener('input', () => {
+    const value = filter.value.toLocaleLowerCase('pt-BR').trim();
+    document.querySelectorAll<HTMLElement>('[data-search-item]').forEach((item) => { item.hidden = !item.dataset.searchText?.toLocaleLowerCase('pt-BR').includes(value); });
+    document.querySelectorAll<HTMLDetailsElement>('.module-group').forEach((group) => { const hasMatch = [...group.querySelectorAll<HTMLElement>('[data-search-item]')].some((item) => !item.hidden); if (value && hasMatch) group.open = true; group.hidden = Boolean(value) && !hasMatch; });
+  });
+  document.querySelectorAll<HTMLButtonElement>('[data-complete]').forEach((button) => button.addEventListener('click', async () => {
+    const wasCompleted = button.dataset.completed === 'true'; button.disabled = true;
+    try { const response = await fetch('/api/progress', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ discipline_slug: button.dataset.discipline, lesson_slug: button.dataset.lesson, completed: !wasCompleted }) }); if (!response.ok) throw new Error('Entre na sua conta para salvar seu progresso.'); button.dataset.completed = String(!wasCompleted); button.querySelectorAll('span')[0].textContent = !wasCompleted ? '✓' : '○'; button.querySelectorAll('span')[1].textContent = !wasCompleted ? 'Aula concluída' : 'Marcar como concluído'; }
+    catch (error) { alert(error instanceof Error ? error.message : 'Não foi possível salvar o progresso.'); }
+    finally { button.disabled = false; }
+  }));
+</script>
+
+<style>
+  .reader-shell { display:grid; grid-template-columns: minmax(190px, 220px) minmax(0, 650px) minmax(190px, 220px); justify-content:center; gap:clamp(22px,3vw,50px); max-width:1600px; margin:0 auto; padding:0 24px 80px; }
+  .reader-left { border-right:1px solid var(--color-border-light); padding:28px 16px 24px 0; }
+  .reader-left-inner,.reader-right-inner { position:sticky; top:84px; max-height:calc(100vh - 100px); overflow:auto; scrollbar-width:thin; }
+  .reader-main { min-width:0; }
+  .reader-right { border-left:1px solid var(--color-border-light); padding:28px 0 24px 16px; }
+  .discipline-hero { margin:0 calc(-1 * clamp(18px,3vw,50px)) 0; padding:48px clamp(18px,3vw,50px) 38px; border-bottom:1px solid var(--color-border-light); }
+  .welcome-label { display:inline-flex; align-items:center; gap:11px; border:1px solid var(--color-border-light); border-radius:999px; background:var(--color-surface-light); padding:8px 14px 8px 8px; }
+  .welcome-page { border-bottom:1px solid var(--color-border-light); padding-bottom:32px; }
+  .welcome-nav-link { display:flex; align-items:center; gap:10px; border:1px solid var(--color-border-light); border-radius:11px; padding:10px; transition:border-color .18s,background .18s; }
+  .welcome-nav-link:hover,.welcome-nav-link.selected-chapter-link { border-color:var(--color-accent-light); background:color-mix(in srgb,var(--color-accent-light) 7%,transparent); }
+  .welcome-nav-icon { display:grid; width:30px; height:30px; place-items:center; border-radius:9px; background:color-mix(in srgb,var(--color-accent-light) 12%,white); color:var(--color-accent-light); }
+  .welcome-nav-link strong,.welcome-nav-link small { display:block; }
+  .welcome-nav-link strong { font-size:11px; }
+  .welcome-nav-link small { margin-top:2px; color:var(--color-text-muted-light); font-size:9px; }
+  :global(.dark) .welcome-page { border-color:var(--color-border-dark); }
+  :global(.dark) .welcome-nav-link { border-color:var(--color-border-dark); }
+  :global(.dark) .welcome-nav-link small { color:var(--color-text-muted-dark); }
+  .welcome-icon { display:grid; width:34px; height:34px; place-items:center; border-radius:50%; background:color-mix(in srgb,var(--color-accent-light) 12%,white); color:var(--color-accent-light); }
+  .welcome-label small,.welcome-label strong { display:block; }
+  .welcome-label small { color:var(--color-text-muted-light); font-size:8px; font-weight:700; letter-spacing:.16em; }
+  .welcome-label strong { margin-top:2px; font-family:Fraunces,serif; font-size:14px; }
+  :global(.dark) .welcome-label { background:var(--color-surface-dark); }
+  :global(.dark) .welcome-label small { color:var(--color-text-muted-dark); }
+  :global(.dark) .welcome-icon { background:color-mix(in srgb,var(--color-accent-dark) 18%,transparent); color:var(--color-accent-dark); }
+  .module-content { padding-top:40px; }
+  .learning-outcomes { display:grid; grid-template-columns:minmax(0,1fr); gap:12px; border-bottom:1px solid var(--color-border-light); padding:24px 0 30px; }
+  .description-card { grid-column:auto; }
+  .module-picker { padding:28px 0 8px; }
+  .module-choice { overflow:hidden; border:1px solid var(--color-border-light); border-radius:13px; background:var(--color-surface-light); transition:border-color .18s,box-shadow .18s; }
+  .module-choice[open] { border-color:color-mix(in srgb,var(--color-accent-light) 45%,var(--color-border-light)); box-shadow:0 8px 24px #00000009; }
+  .module-choice > summary { display:flex; align-items:center; gap:13px; cursor:pointer; list-style:none; padding:14px 16px; }
+  .module-choice > summary::-webkit-details-marker { display:none; }
+  .module-choice-number { display:grid; width:38px; height:38px; flex:none; place-items:center; border-radius:11px; background:color-mix(in srgb,var(--color-accent-light) 10%,transparent); color:var(--color-accent-light); font-family:Fraunces,serif; font-weight:700; }
+  .module-choice summary strong,.module-choice summary small { display:block; }
+  .module-choice summary strong { font-size:13px; }
+  .module-choice summary small { margin-top:3px; color:var(--color-text-muted-light); font-size:10px; }
+  .module-choice-chevron { color:var(--color-text-muted-light); transition:transform .18s; }
+  .module-choice[open] .module-choice-chevron { transform:rotate(180deg); }
+  .module-choice-lessons { border-top:1px solid var(--color-border-light); padding:6px 12px 10px; }
+  .module-choice-lessons a { display:flex; align-items:center; gap:12px; border-radius:9px; padding:11px 10px; font-size:12px; transition:background .15s,color .15s; }
+  .module-choice-lessons a:hover { background:color-mix(in srgb,var(--color-accent-light) 8%,transparent); color:var(--color-accent-light); }
+  .module-choice-lessons a span:first-child { color:var(--color-accent-light); font-family:Fraunces,serif; }
+  .module-choice-lessons a strong { flex:1; font-weight:600; }
+  :global(.dark) .module-choice { background:var(--color-surface-dark); border-color:var(--color-border-dark); }
+  :global(.dark) .module-choice summary small { color:var(--color-text-muted-dark); }
+  :global(.dark) .module-choice-lessons { border-color:var(--color-border-dark); }
+  .outcome-card { border:1px solid var(--color-border-light); border-radius:12px; background:var(--color-surface-light); padding:18px; color:var(--color-text-main-light); }
+  .outcome-card-dark { border-color:#14231e; background:#14231e; color:white; }
+  :global(.dark) .outcome-card { border-color:var(--color-border-dark); background:var(--color-surface-dark); color:var(--color-text-main-dark); }
+  :global(.dark) .outcome-card-dark { border-color:#14231e; background:#14231e; color:white; }
+  .module-heading { display:flex; align-items:center; margin-bottom:16px; }
+  .chapter-article { border-top:1px solid var(--color-border-light); padding:26px 0 32px; }
+  .chapter-tabs { display:flex; gap:22px; border-bottom:1px solid var(--color-border-light); margin:25px 0 24px; }
+  .chapter-tabs button { position:relative; padding:0 2px 12px; color:var(--color-text-muted-light); font-size:10px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; transition:color .18s; }
+  .chapter-tabs button:hover,.chapter-tabs button[aria-selected="true"] { color:var(--color-accent-light); }
+  .chapter-tabs button[aria-selected="true"]::after { position:absolute; right:0; bottom:-1px; left:0; height:2px; background:var(--color-accent-light); content:""; }
+  .practice-empty { margin-top:24px; border:1px dashed var(--color-border-light); border-radius:14px; background:color-mix(in srgb,var(--color-surface-light) 70%,transparent); padding:32px 22px; text-align:center; }
+  .practice-empty > span { color:var(--color-highlight-light); font-size:22px; }
+  .practice-empty h3 { margin-top:10px; font-family:Fraunces,serif; font-size:20px; font-weight:600; }
+  .practice-empty p { margin:8px auto 0; max-width:380px; color:var(--color-text-muted-light); font-size:13px; line-height:1.6; }
+  :global(.dark) .chapter-tabs { border-color:var(--color-border-dark); }
+  :global(.dark) .chapter-tabs button { color:var(--color-text-muted-dark); }
+  :global(.dark) .chapter-tabs button:hover,:global(.dark) .chapter-tabs button[aria-selected="true"] { color:var(--color-accent-dark); }
+  :global(.dark) .chapter-tabs button[aria-selected="true"]::after { background:var(--color-accent-dark); }
+  :global(.dark) .practice-empty { border-color:var(--color-border-dark); background:var(--color-surface-dark); }
+  :global(.dark) .practice-empty p { color:var(--color-text-muted-dark); }
+  .chapter-title-row { display:grid; grid-template-columns:34px minmax(0,1fr); gap:12px; align-items:start; }
+  .chapter-title-row > span { font-family:Fraunces,serif; font-size:1.1rem; font-weight:700; color:var(--color-accent-light); }
+  .key-idea { display:flex; gap:12px; align-items:flex-start; margin:22px 0 26px; border-radius:14px; background:#e9e5da; padding:22px; font-family:Fraunces,serif; font-size:1.1rem; font-weight:600; line-height:1.6; }
+  :global(.dark) .key-idea { background:var(--color-surface-dark); }
+  .guided-practice { margin-top:34px; border-radius:14px; background:#e9e5da; padding:22px; }
+  :global(.dark) .guided-practice { background:var(--color-surface-dark); }
+  .essential-card { margin-top:30px; border-radius:14px; background:var(--color-highlight-light); padding:22px; color:var(--color-text-main-light); }
+  :global(.dark) .essential-card { background:var(--color-highlight-dark); }
+  .complete-button { display:flex; width:100%; align-items:center; justify-content:center; gap:10px; border:1px solid #85857d; border-radius:8px; padding:11px 14px; font-size:12px; font-weight:700; transition:background .15s; }
+  .complete-button:hover { background:var(--color-accent-light); color:white; }
+  .next-chapter { position:relative; display:block; margin-top:16px; border-radius:10px; background:var(--color-accent-light); padding:18px 58px 18px 20px; color:white; }
+  .module-group summary::-webkit-details-marker { display:none; }
+  .selected-chapter-link { background:color-mix(in srgb,var(--color-accent-light) 10%,transparent); color:var(--color-accent-light)!important; font-weight:700; }
+  [data-chapter-title] { cursor:pointer; }
+  .note-panel,.shortcut-panel { animation:panel-in .22s ease-out; }
+  .note-save-button { display:flex; width:100%; align-items:center; justify-content:center; gap:.55rem; border:1px solid color-mix(in srgb,var(--color-accent-light) 80%,#173b4a); border-radius:14px; background:linear-gradient(135deg,var(--color-accent-light),color-mix(in srgb,var(--color-accent-light) 76%,#173b4a)); padding:.72rem 1rem; color:#fff; font-size:.78rem; font-weight:700; box-shadow:0 5px 14px color-mix(in srgb,var(--color-accent-light) 24%,transparent); transition:transform .18s,box-shadow .18s,opacity .18s; }
+  .note-save-button:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 8px 20px color-mix(in srgb,var(--color-accent-light) 32%,transparent); }
+  .note-save-button:disabled { cursor:not-allowed; opacity:.5; box-shadow:none; }
+  .note-save-button span:first-child { display:grid; width:1.25rem; height:1.25rem; place-items:center; border:1px solid #ffffff8c; border-radius:999px; font-size:.85rem; }
+  .shortcut-panel { border:1px solid color-mix(in srgb,var(--color-highlight-light) 45%,var(--color-border-light)); }
+  @keyframes panel-in { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+  #chapter-nav [hidden] { display:none; }
+  @media (max-width:1100px) { .reader-shell { grid-template-columns: minmax(170px,210px) minmax(0,700px); } .reader-right { display:none; } .discipline-hero { margin-right:-24px; } }
+  @media (max-width:720px) { .reader-shell { display:block; padding:0 18px 56px; } .reader-left { position:sticky; top:64px; z-index:10; border:0; padding:10px 0; background:var(--color-bg-light); } :global(.dark) .reader-left { background:var(--color-bg-dark); } .reader-left-inner { position:static; max-height:none; overflow:visible; } #chapter-nav { display:none; position:absolute; top:100%; left:0; right:0; max-height:55vh; overflow:auto; border:1px solid var(--color-border-light); border-radius:12px; background:var(--color-bg-light); padding:12px; box-shadow:0 10px 24px #0002; } .reader-left:focus-within #chapter-nav { display:block; } .reader-left-inner > blockquote { display:none; } .discipline-hero { margin:0 -18px; padding:34px 18px 26px; } .discipline-hero h1 { font-size:2.7rem; } .learning-outcomes { grid-template-columns:1fr; } .chapter-article { padding:22px 0 26px; } }
+  :global(.dark) .reader-left { border-color:var(--color-border-dark); }
+  :global(.dark) .reader-right { border-color:var(--color-border-dark); }
+  :global(.dark) .chapter-article { border-color:var(--color-border-dark); }
+  :global(.dark) .discipline-hero { border-color:var(--color-border-dark); }
+</style>

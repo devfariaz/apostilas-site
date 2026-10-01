@@ -1,0 +1,12 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { createSupabaseServerClient } from '../lib/supabase';
+let user = null; let isActive = false;
+try {
+  const supabase = createSupabaseServerClient(Astro.cookies, Astro.request);
+  const { data } = await supabase.auth.getUser(); user = data.user;
+  if (user) { const result = await supabase.from('profiles').select('is_active').eq('id', user.id).maybeSingle(); isActive = Boolean(result.data?.is_active); }
+} catch { /* Esta página também pode ser acessada antes da confirmação do e-mail. */ }
+if (isActive) return Astro.redirect('/');
+---
+<BaseLayout title="Aguardando aprovação — Professor Deivid Nobre - Apostilas" user={user}><main class="mx-auto max-w-xl px-5 py-20 text-center"><div class="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-highlight-light/20 text-3xl">◷</div><p class="mt-8 text-xs font-bold uppercase tracking-[.2em] text-accent-light">Acesso em análise</p><h1 class="mt-3 font-display text-4xl font-semibold">Estamos preparando seu acesso</h1><p class="mt-5 leading-relaxed text-text-muted-light dark:text-text-muted-dark">Seu cadastro foi recebido. Contas com e-mail institucional iniciado por <strong>rm</strong> são ativadas automaticamente; as demais aguardam aprovação do administrador. Se acabou de se cadastrar, confirme também o endereço de e-mail, caso tenha recebido uma mensagem de verificação.</p><div class="mt-8 flex justify-center gap-3"><a class="rounded-full bg-accent-light px-5 py-3 font-semibold text-white" href="/login">Entrar novamente</a><a class="rounded-full border border-border-light px-5 py-3 dark:border-border-dark" href="/">Voltar ao início</a></div></main></BaseLayout>

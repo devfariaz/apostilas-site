@@ -1,0 +1,66 @@
+---
+import ThemeToggle from './ThemeToggle.astro';
+import LogoMark from './LogoMark.astro';
+import { disciplines } from '../lib/catalog';
+import { createSupabaseServerClient } from '../lib/supabase';
+const { user } = Astro.props;
+let subjects: { slug: string; name: string; description?: string | null }[] = [...disciplines];
+let isAdmin = false;
+let hasSession = Boolean(user);
+try {
+  const client = createSupabaseServerClient(Astro.cookies, Astro.request);
+  const { data: { user: sessionUser } } = await client.auth.getUser();
+  hasSession = Boolean(sessionUser);
+  const result = await client.from('disciplines').select('slug,name,description').eq('active', true).order('sort_order').order('name');
+  if (result.data?.length) subjects = result.data;
+  if (sessionUser) {
+    const profile = await client.from('profiles').select('role').eq('id', sessionUser.id).maybeSingle();
+    isAdmin = profile.data?.role === 'admin';
+    if (!isAdmin) {
+      const assignments = await client.from('student_disciplines').select('discipline_slug').eq('user_id', sessionUser.id);
+      const assignedSlugs = new Set((assignments.data ?? []).map((row) => row.discipline_slug));
+      subjects = subjects.filter((item) => assignedSlugs.has(item.slug));
+    }
+  }
+} catch { if (hasSession) subjects = []; /* Visitantes mantêm navegação pública; alunos dependem das atribuições retornadas pelo Supabase. */ }
+const yearGroups = [
+  { label: '1º ano', subjects: subjects.filter((item) => /(?:^|[-\s])i$/i.test(item.slug) || /\bI$/i.test(item.name)) },
+  { label: '2º ano', subjects: subjects.filter((item) => /(?:^|[-\s])ii$/i.test(item.slug) || /\bII$/i.test(item.name)) },
+  { label: '3º ano', subjects: subjects.filter((item) => /(?:^|[-\s])iii$/i.test(item.slug) || /\bIII$/i.test(item.name) || /marketing/i.test(item.name)) },
+];
+---
+<header class="sticky top-0 z-30 border-b border-border-light bg-bg-light/90 backdrop-blur dark:border-border-dark dark:bg-bg-dark/90">
+  <div class="mx-auto flex max-w-[1440px] items-center gap-8 px-5 py-3 lg:px-8">
+    <a href="/" class="flex shrink-0 items-center gap-3 font-display tracking-tight" aria-label="Professor Deivid Nobre - Apostilas"><span class="grid h-10 w-10 place-items-center rounded-xl bg-accent-light p-1.5"><LogoMark class="h-8 w-8 text-white" /></span><span class="flex flex-col text-base font-bold leading-tight sm:text-lg">Professor Deivid Nobre<span class="text-xs font-medium text-text-muted-light dark:text-text-muted-dark">Apostilas</span></span></a>
+    <nav class="hidden flex-1 items-center gap-2 text-sm text-text-muted-light lg:flex dark:text-text-muted-dark" aria-label="Disciplinas por ano">
+      {yearGroups.map((group) => group.subjects.length > 0 && <details class="year-nav-group relative">
+        <summary class="flex cursor-pointer list-none items-center gap-2 rounded-full px-3 py-2 font-semibold transition hover:bg-black/5 hover:text-accent-light dark:hover:bg-white/10">{group.label}<span class="year-nav-chevron" aria-hidden="true">⌄</span></summary>
+        <div class="year-nav-menu absolute left-0 top-full z-40 mt-2 min-w-60 rounded-2xl border border-border-light bg-surface-light p-2 shadow-xl dark:border-border-dark dark:bg-surface-dark">
+          {group.subjects.map((item) => <a class="block rounded-xl px-3 py-2.5 transition hover:bg-black/5 hover:text-accent-light dark:hover:bg-white/10" href={`/apostila/${item.slug}`}><span class="block font-semibold text-text-main-light dark:text-text-main-dark">{item.name}</span>{item.description && <span class="mt-0.5 block text-xs text-text-muted-light dark:text-text-muted-dark">{item.description}</span>}</a>)}
+        </div>
+      </details>)}
+    </nav>
+    <form action="/buscar" method="get" class="hidden w-72 shrink-0 items-center gap-2 rounded-full border border-border-light bg-surface-light px-4 py-2.5 transition focus-within:border-accent-light focus-within:ring-2 focus-within:ring-accent-light/15 md:flex xl:w-96 dark:border-border-dark dark:bg-surface-dark"><span aria-hidden="true" class="text-lg leading-none text-text-muted-light">⌕</span><input aria-label="Buscar apostilas por assunto ou tag" name="q" class="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-text-muted-light" placeholder="Buscar na apostila" /><kbd class="rounded border border-border-light px-1.5 text-[10px] text-text-muted-light dark:border-border-dark">↵</kbd></form>
+    <div class="ml-auto flex items-center gap-2"><a href="/buscar" class="rounded-full p-2 text-sm hover:bg-black/5 md:hidden dark:hover:bg-white/10" aria-label="Buscar">⌕</a><ThemeToggle />
+      {user ? <details class="relative"><summary class="max-w-40 cursor-pointer list-none truncate rounded-full px-4 py-2 text-sm hover:bg-black/5 dark:hover:bg-white/10">{user.user_metadata?.full_name || user.email}</summary><div class="absolute right-0 mt-2 w-52 rounded-2xl border border-border-light bg-surface-light p-3 shadow-xl dark:border-border-dark dark:bg-surface-dark"><p class="truncate px-2 py-1 text-xs text-text-muted-light dark:text-text-muted-dark">{user.email}</p>{isAdmin && <a href="/admin" class="block rounded-xl px-2 py-2 text-sm hover:bg-black/5 dark:hover:bg-white/10">Painel administrativo</a>}<form action="/api/auth/logout" method="post"><button class="mt-2 w-full rounded-xl px-2 py-2 text-left text-sm hover:bg-black/5 dark:hover:bg-white/10">Sair da conta</button></form></div></details> : <a class="rounded-full bg-accent-light px-4 py-2 text-sm font-semibold text-white hover:opacity-90" href="/login">Entrar</a>}
+    </div>
+  </div>
+</header>
+
+<script>
+  const yearMenus = [...document.querySelectorAll<HTMLDetailsElement>('.year-nav-group')];
+  yearMenus.forEach((menu) => menu.addEventListener('toggle', () => {
+    if (!menu.open) return;
+    yearMenus.forEach((otherMenu) => {
+      if (otherMenu !== menu) otherMenu.open = false;
+    });
+  }));
+</script>
+
+<style>
+  .year-nav-group > summary::-webkit-details-marker { display:none; }
+  .year-nav-chevron { font-size:11px; transition:transform .18s; }
+  .year-nav-group[open] .year-nav-chevron { transform:rotate(180deg); }
+  .year-nav-menu { animation:year-menu-in .14s ease-out; }
+  @keyframes year-menu-in { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+</style>
