@@ -35,18 +35,24 @@ export const onRequest = defineMiddleware(async (context, next) => {
         // A página principal aplica a mesma regra antes de renderizar conteúdo.
         if (segments.length > 2) {
           const targetSlug = segments.at(-1);
-          const [{ data: lessons, error: lessonsError }, { data: progress, error: progressError }] = await Promise.all([
-            supabase.from('apostilas').select('slug,lesson_order').eq('discipline_slug', discipline).eq('published', true).order('lesson_order'),
+          const [{ data: lessons, error: lessonsError }, { data: modules, error: modulesError }, { data: progress, error: progressError }] = await Promise.all([
+            supabase.from('apostilas').select('slug,lesson_order,module_id,module').eq('discipline_slug', discipline).eq('published', true),
+            supabase.from('modules').select('id,name,sort_order').eq('discipline_slug', discipline).order('sort_order'),
             supabase.from('lesson_progress').select('lesson_slug').eq('user_id', user.id).eq('disciplina_slug', discipline)
           ]);
-          if (lessonsError || progressError) {
-            console.error('Falha ao verificar pré-requisitos do capítulo:', lessonsError ?? progressError);
+          if (lessonsError || modulesError || progressError) {
+            console.error('Falha ao verificar pré-requisitos do capítulo:', lessonsError ?? modulesError ?? progressError);
             return context.redirect(`/apostila/${discipline}`);
           }
-          const currentIndex = (lessons ?? []).findIndex((lesson) => lesson.slug === targetSlug);
+          const moduleOrder = (lesson: any) => {
+            const index = (modules ?? []).findIndex((module) => module.id === lesson.module_id || module.name === lesson.module);
+            return index < 0 ? (modules ?? []).length : index;
+          };
+          const orderedLessons = [...(lessons ?? [])].sort((a, b) => moduleOrder(a) - moduleOrder(b) || a.lesson_order - b.lesson_order || a.slug.localeCompare(b.slug));
+          const currentIndex = orderedLessons.findIndex((lesson) => lesson.slug === targetSlug);
           if (currentIndex >= 0) {
             const completed = new Set((progress ?? []).map((row) => row.lesson_slug));
-            if ((lessons ?? []).slice(0, currentIndex).some((lesson) => !completed.has(lesson.slug))) {
+            if (orderedLessons.slice(0, currentIndex).some((lesson) => !completed.has(lesson.slug))) {
               return context.redirect(`/apostila/${discipline}?capitulo-bloqueado=1`);
             }
           }

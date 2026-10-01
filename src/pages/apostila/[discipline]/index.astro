@@ -29,7 +29,11 @@ try {
   isAdmin = profile.data?.role === 'admin';
 } catch { /* A navegação permanece acessível e informa quando não há conteúdo publicado. */ }
 if (!subject) return Astro.redirect('/');
-const lessonsByOrder = [...lessons].sort((a, b) => a.lesson_order - b.lesson_order || a.title.localeCompare(b.title, 'pt-BR'));
+const moduleOrder = (lesson: any) => {
+  const index = modules.findIndex((module) => module.id === lesson.module_id || module.name === lesson.module);
+  return index < 0 ? modules.length : index;
+};
+const lessonsByOrder = [...lessons].sort((a, b) => moduleOrder(a) - moduleOrder(b) || a.lesson_order - b.lesson_order || a.title.localeCompare(b.title, 'pt-BR'));
 const unlockedLessons = new Set<string>();
 let reachedFirstIncomplete = false;
 for (const lesson of lessonsByOrder) {
@@ -417,6 +421,7 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
   .essential-card { margin-top:30px; border-radius:14px; background:var(--color-highlight-light); padding:22px; color:var(--color-text-main-light); }
   :global(.dark) .essential-card { background:var(--color-highlight-dark); }
   .complete-button { display:flex; width:100%; align-items:center; justify-content:center; gap:10px; border:1px solid #85857d; border-radius:8px; padding:11px 14px; font-size:12px; font-weight:700; transition:background .15s; }
+  .complete-button.hidden { display:none; }
   .complete-button:hover { background:var(--color-accent-light); color:white; }
   .next-chapter { position:relative; display:block; margin-top:16px; border-radius:10px; background:var(--color-accent-light); padding:18px 58px 18px 20px; color:white; }
   .module-group summary::-webkit-details-marker { display:none; }
