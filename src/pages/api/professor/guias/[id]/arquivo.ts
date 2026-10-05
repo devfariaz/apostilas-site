@@ -12,6 +12,7 @@ export const GET: APIRoute = async ({ params, cookies, request, redirect }) => {
     .maybeSingle();
 
   if (guideError || !guide) return new Response('Guia não encontrado.', { status: 404 });
+  if (!guide.storage_path) return new Response('Este guia não tem PDF de referência.', { status: 404 });
 
   const { data, error } = await supabase.storage
     .from('teacher-guides')

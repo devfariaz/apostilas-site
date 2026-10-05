@@ -79,7 +79,7 @@ const chapterHref = (guideId: string, chapterSlug: string) => `/professor/guias?
         <h2 class="mt-2 font-display text-lg font-semibold">Material de apoio</h2>
         <p class="mt-2 text-xs leading-relaxed text-text-muted-light dark:text-text-muted-dark">Este conteúdo foi estruturado para leitura no mesmo formato editorial das apostilas dos alunos. Ele permanece separado e não aparece na área estudantil.</p>
         <div class="teacher-guide-info mt-5"><span>DISCIPLINA</span><strong>{selectedGuide.disciplineName}</strong><span>MÓDULO</span><strong>{selectedGuide.moduleName}</strong><span>CAPÍTULO</span><strong>{activeChapter.chapter_order} de {selectedGuide.chapters.length}</strong></div>
-        <a class="teacher-source-link" href={`/api/professor/guias/${selectedGuide.id}/arquivo`}><span aria-hidden="true">↓</span> Baixar PDF original</a>
+        {selectedGuide.storage_path && <a class="teacher-source-link" href={`/api/professor/guias/${selectedGuide.id}/arquivo`}><span aria-hidden="true">↓</span> Baixar PDF original</a>}
       </> : <div class="teacher-reader-hint">Selecione um capítulo do guia na navegação para ler o conteúdo.</div>}
     </div></aside>
   </div>
