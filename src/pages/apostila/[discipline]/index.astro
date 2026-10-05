@@ -84,13 +84,15 @@ for (let i = 0; i < withoutModule.length; i++) {
 }
 const chapterCount = lessons.length;
 const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.reading_minutes ?? 10), 0);
+const formatChapterDate = (value: string | null | undefined) => value ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'America/Sao_Paulo' }).format(new Date(value)) : null;
 const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
 ---
 <BaseLayout title={`${subject.name} — Professor Deivid Nobre - Apostilas`} description={subject.description} user={user}>
   <div class="reader-shell">
     <aside class="reader-left"><div class="reader-left-inner">
       <div class="mb-5"><p class="text-[10px] font-bold uppercase tracking-[.18em] text-text-muted-light dark:text-text-muted-dark">Seu percurso</p><div class="mt-3 h-1.5 overflow-hidden rounded-full bg-black/10 dark:bg-white/10"><div class="h-full rounded-full bg-accent-light" style={`width:${chapterCount ? Math.round(completedLessons.size / chapterCount * 100) : 0}%`}></div></div><p class="mt-2 text-[10px] text-text-muted-light dark:text-text-muted-dark">{chapterCount ? Math.round(completedLessons.size / chapterCount * 100) : 0}% concluído</p></div>
-      <label class="relative block"><span class="sr-only">Encontrar capítulo neste módulo</span><span aria-hidden="true" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light">⌕</span><input id="chapter-filter" class="w-full rounded-lg border border-border-light bg-surface-light py-2 pl-9 pr-3 text-xs outline-none focus:border-accent-light dark:border-border-dark dark:bg-surface-dark" placeholder="Encontrar capítulo" /></label>
+      <label class="desktop-chapter-search relative block"><span class="sr-only">Encontrar capítulo neste módulo</span><span aria-hidden="true" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted-light">⌕</span><input id="chapter-filter" class="w-full rounded-lg border border-border-light bg-surface-light py-2 pl-9 pr-3 text-xs outline-none focus:border-accent-light dark:border-border-dark dark:bg-surface-dark" placeholder="Encontrar capítulo" /></label>
+      <div class="mobile-chapter-search"><button id="mobile-chapter-search-toggle" type="button" aria-expanded="false" aria-controls="mobile-chapter-search-panel"><span aria-hidden="true">⌕</span><span>Buscar capítulo</span><span aria-hidden="true" class="mobile-search-chevron">⌄</span></button><section id="mobile-chapter-search-panel" class="mobile-search-panel" hidden aria-label="Buscar capítulo"><div class="mobile-search-input-row"><label for="mobile-chapter-filter" class="sr-only">Digite o nome do capítulo</label><input id="mobile-chapter-filter" type="search" enterkeyhint="search" autocomplete="off" spellcheck="false" placeholder="Digite o nome do capítulo" /><button id="mobile-chapter-search-close" type="button" aria-label="Fechar busca">×</button></div><p class="mobile-search-caption">Capítulos da disciplina</p><div id="mobile-chapter-search-results" class="mobile-search-results">{lessonsByOrder.map((lesson: any) => { const unlocked = unlockedLessons.has(lesson.slug); const moduleName = lesson.module || modules.find((item) => item.id === lesson.module_id)?.name || 'Capítulos'; return <button type="button" data-mobile-search-item data-title={`${lesson.title} ${moduleName} ${(lesson.tags ?? []).join(' ')}`} data-slug={lesson.slug} data-unlocked={unlocked} disabled={!unlocked}><span class="mobile-search-result-copy"><strong>{lesson.title}</strong><small>{moduleName}</small></span><span aria-hidden="true">{completedLessons.has(lesson.slug) ? '✓' : unlocked ? '↗' : '🔒'}</span></button>; })}<p id="mobile-chapter-search-empty" hidden>Nenhum capítulo encontrado.</p></div></section></div>
       <nav id="chapter-nav" class="mt-5 space-y-4" aria-label="Módulos e capítulos">
         <a id="welcome-nav" href="#bem-vindo" class="welcome-nav-link"><span class="welcome-nav-icon">✳</span><span><strong>Bem-vindo</strong><small>Sobre esta disciplina</small></span></a>
         {chapterModules.map((module, index) => <details class="module-group"><summary class="flex cursor-pointer list-none items-start gap-2 border-b border-border-light pb-3 dark:border-border-dark"><span class="font-display text-lg text-accent-light">{String(index + 1).padStart(2, '0')}</span><span class="min-w-0 flex-1"><strong class="block text-xs">{module.name}</strong><small class="text-[10px] text-text-muted-light dark:text-text-muted-dark">{module.lessons.length} capítulos</small></span><span aria-hidden="true" class="text-text-muted-light">⌄</span></summary><ul class="ml-3 mt-2 space-y-1 border-l border-border-light pl-2 dark:border-border-dark">{module.lessons.map((lesson: any) => { const unlocked = unlockedLessons.has(lesson.slug); return <li data-search-item data-search-text={`${lesson.title} ${module.name} ${(lesson.tags ?? []).join(' ')}`}><a data-select-chapter={unlocked ? '' : undefined} data-locked={!unlocked ? 'true' : undefined} aria-disabled={!unlocked ? 'true' : undefined} class:list={["flex items-start gap-2 rounded-md px-2 py-2 text-[11px] leading-snug text-text-muted-light hover:bg-black/5 hover:text-accent-light dark:text-text-muted-dark dark:hover:bg-white/5", { 'chapter-locked': !unlocked }]} href={`#${lesson.slug}`}><span class="w-4 shrink-0 font-mono text-[9px]">{completedLessons.has(lesson.slug) ? '✓' : unlocked ? String(lesson.lesson_order + 1).padStart(2, '0') : '🔒'}</span><span>{lesson.title}</span></a></li>; })}</ul></details>)}
@@ -117,7 +119,7 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
           {previousLesson && <a data-select-chapter href={`#${previousLesson.slug}`} class="previous-chapter"><span aria-hidden="true">←</span><span><small>Capítulo anterior</small><strong>{previousLesson.title}</strong></span></a>}
           <div class="chapter-title-row"><span>{String(lesson.lesson_order + 1).padStart(2, '0')}</span><h2 data-chapter-title class="font-display text-3xl font-semibold leading-tight">{lesson.title}</h2></div>
           {lesson.summary && <p class="mb-6 ml-12 text-sm leading-relaxed text-text-muted-light dark:text-text-muted-dark">{lesson.summary}</p>}
-          <p class="chapter-reading-time mt-3 mb-5 ml-12" aria-label={`Tempo estimado de leitura: ${lesson.reading_minutes ?? 10} minutos`}><span aria-hidden="true">◷</span> {lesson.reading_minutes ?? 10} min de leitura</p>
+          <div class="chapter-meta mt-3 mb-5 ml-12"><span aria-label={`Tempo estimado de leitura: ${lesson.reading_minutes ?? 10} minutos`}><span aria-hidden="true">◷</span> {lesson.reading_minutes ?? 10} min de leitura</span>{formatChapterDate(lesson.created_at) && <span>Criado em {formatChapterDate(lesson.created_at)}</span>}{formatChapterDate(lesson.updated_at) && <span>Atualizado em {formatChapterDate(lesson.updated_at)}</span>}</div>
           <div class="chapter-tabs" role="tablist" aria-label={`Conteúdo de ${lesson.title}`}><button type="button" id={`${lesson.slug}-theory-tab`} role="tab" aria-selected="true" aria-controls={`${lesson.slug}-theory`} data-chapter-tab="theory">Teoria</button><button type="button" id={`${lesson.slug}-practice-tab`} role="tab" aria-selected="false" aria-controls={`${lesson.slug}-practice`} data-chapter-tab="practice">Guia de bancada</button></div>
           <button type="button" class="download-chapter-pdf" data-download-chapter title="Na janela de impressão, escolha Salvar como PDF."><span aria-hidden="true">⇩</span> Salvar capítulo em PDF</button>
           <section id={`${lesson.slug}-theory`} role="tabpanel" aria-labelledby={`${lesson.slug}-theory-tab`} data-chapter-panel="theory">
@@ -319,6 +321,40 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
     document.querySelectorAll<HTMLElement>('[data-search-item]').forEach((item) => { item.hidden = !item.dataset.searchText?.toLocaleLowerCase('pt-BR').includes(value); });
     document.querySelectorAll<HTMLDetailsElement>('.module-group').forEach((group) => { const hasMatch = [...group.querySelectorAll<HTMLElement>('[data-search-item]')].some((item) => !item.hidden); if (value && hasMatch) group.open = true; group.hidden = Boolean(value) && !hasMatch; });
   });
+  const mobileSearchToggle = document.querySelector<HTMLButtonElement>('#mobile-chapter-search-toggle');
+  const mobileSearchPanel = document.querySelector<HTMLElement>('#mobile-chapter-search-panel');
+  const mobileSearchInput = document.querySelector<HTMLInputElement>('#mobile-chapter-filter');
+  const mobileSearchClose = document.querySelector<HTMLButtonElement>('#mobile-chapter-search-close');
+  const mobileSearchItems = [...document.querySelectorAll<HTMLButtonElement>('[data-mobile-search-item]')];
+  const mobileSearchEmpty = document.querySelector<HTMLElement>('#mobile-chapter-search-empty');
+  const closeMobileSearch = (returnFocus = false) => {
+    if (!mobileSearchPanel || !mobileSearchToggle) return;
+    mobileSearchPanel.hidden = true;
+    mobileSearchToggle.setAttribute('aria-expanded', 'false');
+    if (returnFocus) mobileSearchToggle.focus();
+  };
+  mobileSearchToggle?.addEventListener('click', () => {
+    if (!mobileSearchPanel) return;
+    const open = mobileSearchPanel.hidden;
+    mobileSearchPanel.hidden = !open;
+    mobileSearchToggle.setAttribute('aria-expanded', String(open));
+    if (open) { if (mobileSearchInput) mobileSearchInput.value = ''; mobileSearchItems.forEach((item) => { item.hidden = false; }); if (mobileSearchEmpty) mobileSearchEmpty.hidden = true; }
+  });
+  mobileSearchClose?.addEventListener('click', () => closeMobileSearch(true));
+  mobileSearchInput?.addEventListener('input', () => {
+    const normalize = (value: string) => value.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const value = normalize(mobileSearchInput.value.trim());
+    let matches = 0;
+    mobileSearchItems.forEach((item) => { const visible = normalize(item.dataset.title ?? '').includes(value); item.hidden = !visible; if (visible) matches++; });
+    if (mobileSearchEmpty) mobileSearchEmpty.hidden = matches > 0;
+  });
+  mobileSearchItems.forEach((item) => item.addEventListener('click', () => {
+    const slug = item.dataset.slug;
+    const chapter = chapters.find((entry) => entry.dataset.lesson === slug);
+    if (!chapter || item.dataset.unlocked !== 'true') return;
+    void activateChapter(chapter);
+    if (activeSlug === slug) { closeMobileSearch(); requestAnimationFrame(() => chapter.scrollIntoView({ behavior: 'smooth', block: 'start' })); }
+  }));
   completeButton?.addEventListener('click', async () => {
     if (!completeButton.dataset.lesson || completeButton.dataset.completed === 'true') return;
     completeButton.disabled = true;
@@ -427,9 +463,11 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
   :global(.dark) .practice-empty p { color:var(--color-text-muted-dark); }
   .chapter-title-row { display:grid; grid-template-columns:34px minmax(0,1fr); gap:12px; align-items:start; }
   .chapter-title-row > span { font-family:'Exo 2',sans-serif; font-size:1.1rem; font-weight:700; color:var(--color-accent-light); }
-  .chapter-reading-time { display:flex; align-items:center; gap:6px; color:var(--color-text-muted-light); font-size:11px; line-height:1.4; }
-  .chapter-reading-time span { font-size:14px; }
-  :global(.dark) .chapter-reading-time { color:var(--color-text-muted-dark); }
+  .chapter-meta { display:flex; flex-wrap:wrap; align-items:center; gap:6px 16px; color:var(--color-text-muted-light); font-size:11px; line-height:1.5; }
+  .chapter-meta > span { display:inline-flex; align-items:center; gap:5px; }
+  .chapter-meta > span:first-child > span { font-size:14px; }
+  :global(.dark) .chapter-meta { color:var(--color-text-muted-dark); }
+  .mobile-chapter-search { display:none; }
   .key-idea { display:flex; gap:12px; align-items:flex-start; margin:22px 0 26px; border-radius:14px; background:#e9e5da; padding:22px; font-family:'Exo 2',sans-serif; font-size:1.1rem; font-weight:600; line-height:1.6; }
   :global(.dark) .key-idea { background:var(--color-surface-dark); }
   .guided-practice { margin-top:34px; border-radius:14px; background:#e9e5da; padding:22px; }
@@ -477,9 +515,35 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
     .reader-left { position:relative; top:auto; z-index:10; border:0; padding:10px 0; background:var(--color-bg-light); }
     :global(.dark) .reader-left { background:var(--color-bg-dark); }
     .reader-left-inner { position:static; max-height:none; overflow:visible; }
-    #chapter-nav { display:none; position:absolute; top:100%; left:0; right:0; max-height:55vh; overflow:auto; border:1px solid var(--color-border-light); border-radius:12px; background:var(--color-bg-light); padding:12px; box-shadow:0 10px 24px #0002; }
-    :global(.dark) #chapter-nav { border-color:var(--color-border-dark); background:var(--color-bg-dark); }
-    .reader-left:focus-within #chapter-nav { display:block; }
+    .desktop-chapter-search,#chapter-nav { display:none!important; }
+    .mobile-chapter-search { display:block; position:relative; }
+    #mobile-chapter-search-toggle { display:flex; width:100%; align-items:center; gap:10px; border:1px solid var(--color-border-light); border-radius:12px; background:var(--color-surface-light); padding:11px 13px; color:var(--color-text-muted-light); text-align:left; font-size:14px; }
+    #mobile-chapter-search-toggle > span:first-child { font-size:18px; }
+    #mobile-chapter-search-toggle .mobile-search-chevron { margin-left:auto; }
+    :global(.dark) #mobile-chapter-search-toggle { border-color:var(--color-border-dark); background:var(--color-surface-dark); color:var(--color-text-muted-dark); }
+    .mobile-search-panel { margin-top:8px; overflow:hidden; border:1px solid var(--color-border-light); border-radius:14px; background:var(--color-surface-light); box-shadow:0 8px 22px #00000012; }
+    .mobile-search-panel[hidden] { display:none!important; }
+    :global(.dark) .mobile-search-panel { border-color:var(--color-border-dark); background:var(--color-surface-dark); }
+    .mobile-search-input-row { display:flex; align-items:center; gap:8px; padding:10px 10px 8px 14px; }
+    .mobile-search-input-row input { width:100%; min-width:0; border:0; outline:none; background:transparent; color:var(--color-text-main-light); font-size:16px; }
+    .mobile-search-input-row input::placeholder { color:var(--color-text-muted-light); }
+    :global(.dark) .mobile-search-input-row input { color:var(--color-text-main-dark); }
+    :global(.dark) .mobile-search-input-row input::placeholder { color:var(--color-text-muted-dark); }
+    .mobile-search-input-row button { display:grid; width:34px; height:34px; flex:none; place-items:center; border-radius:50%; background:color-mix(in srgb,var(--color-text-muted-light) 10%,transparent); font-size:22px; }
+    .mobile-search-caption { border-top:1px solid var(--color-border-light); padding:9px 14px 5px; color:var(--color-text-muted-light); font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+    :global(.dark) .mobile-search-caption { border-color:var(--color-border-dark); color:var(--color-text-muted-dark); }
+    .mobile-search-results { max-height:min(42vh,360px); overflow:auto; padding:4px 8px 8px; overscroll-behavior:contain; }
+    .mobile-search-results > button { display:flex; width:100%; align-items:center; justify-content:space-between; gap:12px; border-radius:9px; padding:10px 8px; text-align:left; }
+    .mobile-search-results > button:not(:disabled):active { background:color-mix(in srgb,var(--color-accent-light) 10%,transparent); }
+    .mobile-search-result-copy { display:grid; min-width:0; gap:3px; }
+    .mobile-search-result-copy strong { font-size:13px; line-height:1.35; }
+    .mobile-search-result-copy small { color:var(--color-text-muted-light); font-size:11px; }
+    :global(.dark) .mobile-search-result-copy small { color:var(--color-text-muted-dark); }
+    .mobile-search-results > button > span:last-child { flex:none; color:var(--color-accent-light); }
+    .mobile-search-results > button:disabled { opacity:.55; }
+    #mobile-chapter-search-empty { padding:14px 8px; color:var(--color-text-muted-light); font-size:13px; }
+    :global(.dark) #mobile-chapter-search-empty { color:var(--color-text-muted-dark); }
+    .reader-left input,.reader-shell input,.reader-shell textarea,.reader-shell select { font-size:16px!important; }
     .reader-left-inner > blockquote { display:none; }
     .discipline-hero { margin:0 -18px; padding:30px 18px 24px; }
     .discipline-hero h1 { font-size:clamp(2rem,9vw,2.7rem); line-height:1.06; overflow-wrap:anywhere; }

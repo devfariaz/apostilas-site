@@ -22,3 +22,8 @@ body { margin: 0; background: #FAF7F2; color: #1E1E1E; }
 .dark body { background: #121214; color: #EDEDED; }
 button, a { -webkit-tap-highlight-color: transparent; }
 ::selection { background: #E8B931; color: #1E1E1E; }
+@media (max-width: 720px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="hidden"]),
+  textarea,
+  select { font-size: 16px; }
+}
