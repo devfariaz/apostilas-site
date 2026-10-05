@@ -338,7 +338,14 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
 <style>
   .reader-shell { display:grid; grid-template-columns: minmax(190px, 220px) minmax(0, 650px) minmax(190px, 220px); justify-content:center; gap:clamp(22px,3vw,50px); max-width:1600px; margin:0 auto; padding:0 24px 80px; }
   .reader-left { border-right:1px solid var(--color-border-light); padding:28px 16px 24px 0; }
-  .reader-left-inner,.reader-right-inner { position:sticky; top:84px; max-height:calc(100vh - 100px); overflow:auto; scrollbar-width:thin; }
+  .reader-left-inner,.reader-right-inner { position:sticky; top:84px; max-height:calc(100vh - 100px); overflow:auto; scrollbar-width:thin; scrollbar-color:color-mix(in srgb,var(--color-text-muted-light) 38%,transparent) transparent; }
+  .reader-left-inner::-webkit-scrollbar,.reader-right-inner::-webkit-scrollbar { width:7px; }
+  .reader-left-inner::-webkit-scrollbar-track,.reader-right-inner::-webkit-scrollbar-track { background:transparent; }
+  .reader-left-inner::-webkit-scrollbar-thumb,.reader-right-inner::-webkit-scrollbar-thumb { border:2px solid transparent; border-radius:999px; background:color-mix(in srgb,var(--color-text-muted-light) 38%,transparent); background-clip:padding-box; }
+  .reader-left-inner:hover::-webkit-scrollbar-thumb,.reader-right-inner:hover::-webkit-scrollbar-thumb { background:color-mix(in srgb,var(--color-accent-light) 68%,transparent); background-clip:padding-box; }
+  :global(.dark) .reader-left-inner,:global(.dark) .reader-right-inner { scrollbar-color:color-mix(in srgb,var(--color-text-muted-dark) 42%,transparent) transparent; }
+  :global(.dark) .reader-left-inner::-webkit-scrollbar-thumb,:global(.dark) .reader-right-inner::-webkit-scrollbar-thumb { background:color-mix(in srgb,var(--color-text-muted-dark) 42%,transparent); background-clip:padding-box; }
+  :global(.dark) .reader-left-inner:hover::-webkit-scrollbar-thumb,:global(.dark) .reader-right-inner:hover::-webkit-scrollbar-thumb { background:color-mix(in srgb,var(--color-accent-dark) 72%,transparent); background-clip:padding-box; }
   .reader-main { min-width:0; }
   .reader-right { border-left:1px solid var(--color-border-light); padding:28px 0 24px 16px; }
   .discipline-hero { margin:0 calc(-1 * clamp(18px,3vw,50px)) 0; padding:48px clamp(18px,3vw,50px) 38px; border-bottom:1px solid var(--color-border-light); }
