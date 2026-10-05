@@ -15,7 +15,7 @@ export default {
         'highlight-light': '#E8B931', 'highlight-dark': '#D97706',
         'border-light': '#E5E0D8', 'border-dark': '#2A2A2E'
       },
-      fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui'], display: ['Fraunces', 'Georgia', 'serif'] }
+      fontFamily: { sans: ['Exo 2', 'ui-sans-serif', 'system-ui', 'sans-serif'], display: ['Exo 2', 'ui-sans-serif', 'system-ui', 'sans-serif'] }
     }
   },
   plugins: [typography]

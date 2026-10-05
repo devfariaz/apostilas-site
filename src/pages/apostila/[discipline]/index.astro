@@ -363,7 +363,7 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
   .welcome-icon { display:grid; width:34px; height:34px; place-items:center; border-radius:50%; background:color-mix(in srgb,var(--color-accent-light) 12%,white); color:var(--color-accent-light); }
   .welcome-label small,.welcome-label strong { display:block; }
   .welcome-label small { color:var(--color-text-muted-light); font-size:8px; font-weight:700; letter-spacing:.16em; }
-  .welcome-label strong { margin-top:2px; font-family:Fraunces,serif; font-size:14px; }
+  .welcome-label strong { margin-top:2px; font-family:'Exo 2',sans-serif; font-size:14px; }
   :global(.dark) .welcome-label { background:var(--color-surface-dark); }
   :global(.dark) .welcome-label small { color:var(--color-text-muted-dark); }
   :global(.dark) .welcome-icon { background:color-mix(in srgb,var(--color-accent-dark) 18%,transparent); color:var(--color-accent-dark); }
@@ -378,7 +378,7 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
   .module-choice[open] { border-color:color-mix(in srgb,var(--color-accent-light) 45%,var(--color-border-light)); box-shadow:0 8px 24px #00000009; }
   .module-choice > summary { display:flex; align-items:center; gap:13px; cursor:pointer; list-style:none; padding:14px 16px; }
   .module-choice > summary::-webkit-details-marker { display:none; }
-  .module-choice-number { display:grid; width:38px; height:38px; flex:none; place-items:center; border-radius:11px; background:color-mix(in srgb,var(--color-accent-light) 10%,transparent); color:var(--color-accent-light); font-family:Fraunces,serif; font-weight:700; }
+  .module-choice-number { display:grid; width:38px; height:38px; flex:none; place-items:center; border-radius:11px; background:color-mix(in srgb,var(--color-accent-light) 10%,transparent); color:var(--color-accent-light); font-family:'Exo 2',sans-serif; font-weight:700; }
   .module-choice summary strong,.module-choice summary small { display:block; }
   .module-choice summary strong { font-size:13px; }
   .module-choice summary small { margin-top:3px; color:var(--color-text-muted-light); font-size:10px; }
@@ -387,7 +387,7 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
   .module-choice-lessons { border-top:1px solid var(--color-border-light); padding:6px 12px 10px; }
   .module-choice-lessons a { display:flex; align-items:center; gap:12px; border-radius:9px; padding:11px 10px; font-size:12px; transition:background .15s,color .15s; }
   .module-choice-lessons a:hover { background:color-mix(in srgb,var(--color-accent-light) 8%,transparent); color:var(--color-accent-light); }
-  .module-choice-lessons a span:first-child { color:var(--color-accent-light); font-family:Fraunces,serif; }
+  .module-choice-lessons a span:first-child { color:var(--color-accent-light); font-family:'Exo 2',sans-serif; }
   .module-choice-lessons a strong { flex:1; font-weight:600; }
   .chapter-locked { cursor:not-allowed; opacity:.5; }
   .chapter-locked:hover { background:transparent!important; color:inherit!important; }
@@ -411,7 +411,7 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
   .chapter-tabs button[aria-selected="true"]::after { position:absolute; right:0; bottom:-1px; left:0; height:2px; background:var(--color-accent-light); content:""; }
   .practice-empty { margin-top:24px; border:1px dashed var(--color-border-light); border-radius:14px; background:color-mix(in srgb,var(--color-surface-light) 70%,transparent); padding:32px 22px; text-align:center; }
   .practice-empty > span { color:var(--color-highlight-light); font-size:22px; }
-  .practice-empty h3 { margin-top:10px; font-family:Fraunces,serif; font-size:20px; font-weight:600; }
+  .practice-empty h3 { margin-top:10px; font-family:'Exo 2',sans-serif; font-size:20px; font-weight:600; }
   .practice-empty p { margin:8px auto 0; max-width:380px; color:var(--color-text-muted-light); font-size:13px; line-height:1.6; }
   :global(.dark) .chapter-tabs { border-color:var(--color-border-dark); }
   :global(.dark) .chapter-tabs button { color:var(--color-text-muted-dark); }
@@ -420,8 +420,8 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
   :global(.dark) .practice-empty { border-color:var(--color-border-dark); background:var(--color-surface-dark); }
   :global(.dark) .practice-empty p { color:var(--color-text-muted-dark); }
   .chapter-title-row { display:grid; grid-template-columns:34px minmax(0,1fr); gap:12px; align-items:start; }
-  .chapter-title-row > span { font-family:Fraunces,serif; font-size:1.1rem; font-weight:700; color:var(--color-accent-light); }
-  .key-idea { display:flex; gap:12px; align-items:flex-start; margin:22px 0 26px; border-radius:14px; background:#e9e5da; padding:22px; font-family:Fraunces,serif; font-size:1.1rem; font-weight:600; line-height:1.6; }
+  .chapter-title-row > span { font-family:'Exo 2',sans-serif; font-size:1.1rem; font-weight:700; color:var(--color-accent-light); }
+  .key-idea { display:flex; gap:12px; align-items:flex-start; margin:22px 0 26px; border-radius:14px; background:#e9e5da; padding:22px; font-family:'Exo 2',sans-serif; font-size:1.1rem; font-weight:600; line-height:1.6; }
   :global(.dark) .key-idea { background:var(--color-surface-dark); }
   .guided-practice { margin-top:34px; border-radius:14px; background:#e9e5da; padding:22px; }
   :global(.dark) .guided-practice { background:var(--color-surface-dark); }
