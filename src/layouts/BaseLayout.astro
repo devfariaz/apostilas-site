@@ -16,5 +16,71 @@ const { title = 'Professor Deivid Nobre - Apostilas', description = 'Apostilas d
     <script is:inline>try{const t=localStorage.getItem('theme');const d=t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d)}catch{}</script>
     <title>{title}</title>
   </head>
-  <body class="min-h-screen bg-bg-light text-text-main-light antialiased dark:bg-bg-dark dark:text-text-main-dark"><Header user={user} /><slot /></body>
+  <body class="min-h-screen bg-bg-light text-text-main-light antialiased dark:bg-bg-dark dark:text-text-main-dark"><Header user={user} /><slot /><div id="pull-refresh-indicator" class="pull-refresh-indicator" role="status" aria-live="polite" hidden><span class="pull-refresh-spinner" aria-hidden="true">↻</span><span id="pull-refresh-label">Puxe para atualizar</span></div>
+<script is:inline>
+  (() => {
+    const indicator = document.getElementById('pull-refresh-indicator');
+    const label = document.getElementById('pull-refresh-label');
+    if (!indicator || !label) return;
+    let startX = 0;
+    let startY = 0;
+    let distance = 0;
+    let tracking = false;
+    let refreshing = false;
+    const threshold = 92;
+    const reset = () => {
+      tracking = false;
+      distance = 0;
+      indicator.hidden = true;
+      indicator.classList.remove('pull-refresh-ready');
+      indicator.style.removeProperty('--pull-offset');
+      label.textContent = 'Puxe para atualizar';
+    };
+    document.addEventListener('touchstart', (event) => {
+      if (refreshing || !window.matchMedia('(max-width: 720px)').matches || window.scrollY > 1 || event.touches.length !== 1) return;
+      const target = event.target;
+      if (target instanceof Element && target.closest('input, textarea, select, button, a, summary, dialog, .mobile-search-results')) return;
+      startX = event.touches[0].clientX;
+      startY = event.touches[0].clientY;
+      distance = 0;
+      tracking = true;
+    }, { passive: true });
+    document.addEventListener('touchmove', (event) => {
+      if (!tracking || event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      const deltaX = touch.clientX - startX;
+      const deltaY = touch.clientY - startY;
+      if (deltaY < 0 || Math.abs(deltaX) > Math.max(40, deltaY * 0.8) || window.scrollY > 1) { reset(); return; }
+      distance = Math.min(deltaY * 0.55, 105);
+      if (distance < 8) return;
+      indicator.hidden = false;
+      indicator.style.setProperty('--pull-offset', `${Math.max(0, distance - 42)}px`);
+      const ready = deltaY >= threshold;
+      indicator.classList.toggle('pull-refresh-ready', ready);
+      label.textContent = ready ? 'Solte para atualizar' : 'Puxe para atualizar';
+    }, { passive: true });
+    document.addEventListener('touchend', () => {
+      if (!tracking) return;
+      const shouldRefresh = distance >= 50 && indicator.classList.contains('pull-refresh-ready');
+      if (!shouldRefresh) { reset(); return; }
+      tracking = false;
+      refreshing = true;
+      label.textContent = 'Atualizando…';
+      indicator.classList.add('pull-refresh-ready');
+      window.setTimeout(() => window.location.reload(), 120);
+    }, { passive: true });
+    document.addEventListener('touchcancel', reset, { passive: true });
+  })();
+</script>
+<style is:global>
+  .pull-refresh-indicator { position:fixed; z-index:100; top:calc(env(safe-area-inset-top, 0px) + 8px); left:50%; display:flex; align-items:center; gap:8px; transform:translate(-50%,calc(-150% + var(--pull-offset,0px))); border:1px solid var(--color-border-light); border-radius:999px; background:var(--color-surface-light); padding:9px 14px; color:var(--color-text-main-light); font-size:12px; font-weight:600; box-shadow:0 4px 18px #0002; opacity:0; pointer-events:none; transition:transform .16s ease,opacity .16s ease; }
+  .pull-refresh-indicator[hidden] { display:none; }
+  .pull-refresh-indicator:not([hidden]) { transform:translate(-50%,var(--pull-offset,0px)); opacity:1; }
+  .pull-refresh-spinner { color:var(--color-accent-light); font-size:17px; line-height:1; }
+  .pull-refresh-ready .pull-refresh-spinner { animation:pull-refresh-spin .7s linear infinite; }
+  .dark .pull-refresh-indicator { border-color:var(--color-border-dark); background:var(--color-surface-dark); color:var(--color-text-main-dark); }
+  @keyframes pull-refresh-spin { to { transform:rotate(360deg); } }
+  @media (min-width:721px) { .pull-refresh-indicator { display:none!important; } }
+</style>
+</body>
 </html>
