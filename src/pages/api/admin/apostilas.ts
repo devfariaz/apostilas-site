@@ -68,8 +68,11 @@ export const PUT: APIRoute = save;
 export const DELETE: APIRoute = async ({ request, cookies }) => {
   const auth = await requireAdmin(cookies, request); if (!auth.user) return Response.json({ error: auth.error }, { status: auth.status });
   let body: any; try { body = await request.json(); } catch { return Response.json({ error: 'JSON inválido.' }, { status: 400 }); }
-  if (typeof body.id !== 'string') return Response.json({ error: 'Capítulo inválido.' }, { status: 400 });
-  const { error } = await auth.supabase.from('apostilas').delete().eq('id', body.id);
+  const validId = (id: unknown): id is string => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+  if (Array.isArray(body.ids) && (body.ids.length > 500 || body.ids.some((id: unknown) => !validId(id)))) return Response.json({ error: 'Selecione até 500 capítulos válidos por vez.' }, { status: 400 });
+  const ids = Array.isArray(body.ids) ? [...new Set(body.ids)] : validId(body.id) ? [body.id] : [];
+  if (!ids.length) return Response.json({ error: 'Seleção de capítulos inválida.' }, { status: 400 });
+  const { data, error } = await auth.supabase.from('apostilas').delete().in('id', ids).select('id');
   if (error) return Response.json({ error: error.message }, { status: 400 });
-  return Response.json({ deleted: true });
+  return Response.json({ deleted: true, deletedCount: data?.length ?? 0 });
 };
