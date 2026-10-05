@@ -1,84 +1,141 @@
----
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { createSupabaseServerClient } from '../../../lib/supabase';
+import { marked } from 'marked';
+import sanitizeHtml from 'sanitize-html';
+
 export const prerender = false;
 
 const supabase = createSupabaseServerClient(Astro.cookies, Astro.request);
-const [{ data: userResult }, { data: guideRows }, { data: disciplineRows }, { data: moduleRows }] = await Promise.all([
+const [{ data: auth }, { data: guideRows, error: guideError }, { data: chapterRows, error: chapterError }, { data: disciplineRows }, { data: moduleRows }] = await Promise.all([
   supabase.auth.getUser(),
   supabase.from('teacher_guides').select('id,discipline_slug,module_id,title,source_filename,storage_path,page_count,created_at,updated_at').order('created_at'),
+  supabase.from('teacher_guide_chapters').select('id,guide_id,slug,title,chapter_order,content_markdown,created_at,updated_at').order('chapter_order'),
   supabase.from('disciplines').select('slug,name').order('sort_order'),
   supabase.from('modules').select('id,name,discipline_slug,sort_order').order('sort_order'),
 ]);
-const user = userResult.user;
+
+const user = auth?.user ?? null;
 const disciplines = disciplineRows ?? [];
 const modules = moduleRows ?? [];
 const guides = (guideRows ?? []).map((guide) => ({
   ...guide,
   disciplineName: disciplines.find((discipline) => discipline.slug === guide.discipline_slug)?.name ?? guide.discipline_slug,
-  moduleName: modules.find((module) => module.id === guide.module_id)?.name ?? 'Módulo',
+  moduleName: modules.find((module) => module.id === guide.module_id)?.name ?? guide.title,
+  chapters: (chapterRows ?? []).filter((chapter) => chapter.guide_id === guide.id),
 }));
+
 const requestedGuide = Astro.url.searchParams.get('guia');
 const selectedGuide = guides.find((guide) => guide.id === requestedGuide) ?? guides[0] ?? null;
-let signedUrl: string | null = null;
-let viewerError = false;
-if (selectedGuide) {
-  const { data, error } = await supabase.storage.from('teacher-guides').createSignedUrl(selectedGuide.storage_path, 60 * 60);
-  signedUrl = data?.signedUrl ?? null;
-  viewerError = Boolean(error || !signedUrl);
-}
+const requestedChapter = Astro.url.searchParams.get('capitulo');
+const activeChapter = selectedGuide?.chapters.find((chapter) => chapter.slug === requestedChapter) ?? selectedGuide?.chapters[0] ?? null;
+const activeChapterIndex = selectedGuide?.chapters.findIndex((chapter) => chapter.id === activeChapter?.id) ?? -1;
+const previousChapter = activeChapterIndex > 0 ? selectedGuide?.chapters[activeChapterIndex - 1] : null;
+const nextChapter = selectedGuide && activeChapterIndex >= 0 ? selectedGuide.chapters[activeChapterIndex + 1] ?? null : null;
+const contentHtml = activeChapter ? sanitizeHtml(await marked.parse(activeChapter.content_markdown ?? '')) : '';
+const loadError = Boolean(guideError || chapterError);
+
+const chapterHref = (guideId: string, chapterSlug: string) => `/professor/guias?guia=${encodeURIComponent(guideId)}&capitulo=${encodeURIComponent(chapterSlug)}`;
 ---
+
 <BaseLayout title="Guias do professor — Professor Deivid Nobre - Apostilas" description="Biblioteca privada de guias e materiais do professor." user={user}>
-  <main class="teacher-guides-shell mx-auto grid max-w-[1440px] gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[270px_minmax(0,1fr)] lg:gap-8 lg:px-8 lg:py-8">
-    <aside class="teacher-guides-sidebar">
-      <div class="mb-5"><a href="/admin" class="text-xs font-semibold text-accent-light hover:underline">← Painel administrativo</a><p class="mt-6 text-[10px] font-bold uppercase tracking-[.2em] text-accent-light">Área do professor</p><h1 class="mt-2 font-display text-2xl font-semibold">Guias de ensino</h1><p class="mt-2 text-sm leading-relaxed text-text-muted-light dark:text-text-muted-dark">Seus materiais de aula, organizados por disciplina e módulo.</p></div>
-      {disciplines.map((discipline) => {
-        const disciplineGuides = guides.filter((guide) => guide.discipline_slug === discipline.slug);
-        return disciplineGuides.length > 0 && <section class="mb-5" aria-label={discipline.name}><h2 class="mb-2 px-2 text-[10px] font-bold uppercase tracking-[.15em] text-text-muted-light dark:text-text-muted-dark">{discipline.name}</h2><nav class="grid gap-1">{disciplineGuides.map((guide) => <a class:list={["guide-nav-item", { 'guide-nav-item-active': selectedGuide?.id === guide.id }]} href={`/professor/guias?guia=${guide.id}`} aria-current={selectedGuide?.id === guide.id ? 'page' : undefined}><span class="guide-nav-index">{String(modules.find((item) => item.id === guide.module_id)?.sort_order ?? 1).padStart(2, '0')}</span><span class="min-w-0"><strong>{guide.moduleName}</strong><small>{guide.page_count} páginas</small></span></a>)}</nav></section>;
-      })}
-      {guides.length === 0 && <p class="rounded-xl border border-dashed border-border-light p-4 text-sm text-text-muted-light dark:border-border-dark dark:text-text-muted-dark">Nenhum guia foi incluído ainda.</p>}
-      <div class="teacher-guides-private"><span aria-hidden="true">▣</span><p>A biblioteca é privada e só aparece no seu login de professor.</p></div>
+  <div class="teacher-reader">
+    <aside class="teacher-reader-left">
+      <div class="teacher-reader-left-inner">
+        <a href="/admin" class="back-admin">← Painel administrativo</a>
+        <p class="teacher-eyebrow mt-6">Área exclusiva do professor</p>
+        <h1 class="mt-2 font-display text-xl font-semibold">Guias de ensino</h1>
+        <p class="mt-2 text-xs leading-relaxed text-text-muted-light dark:text-text-muted-dark">Planos de aula e materiais de apoio organizados por módulo e capítulo.</p>
+        <nav class="teacher-guide-nav mt-6" aria-label="Guias, módulos e capítulos">
+          {guides.map((guide) => <section class="teacher-guide-group">
+            <p class="teacher-guide-discipline">{guide.disciplineName}</p>
+            <details open={selectedGuide?.id === guide.id} class="teacher-module-group">
+              <summary><span class="teacher-module-number">{String(modules.find((item) => item.id === guide.module_id)?.sort_order ?? 1).padStart(2, '0')}</span><span class="min-w-0 flex-1"><strong>{guide.moduleName}</strong><small>{guide.chapters.length} capítulos</small></span><span aria-hidden="true" class="teacher-module-chevron">⌄</span></summary>
+              <ul>{guide.chapters.map((chapter) => <li><a class:list={["teacher-chapter-link", { 'teacher-chapter-current': activeChapter?.id === chapter.id }]} href={chapterHref(guide.id, chapter.slug)} aria-current={activeChapter?.id === chapter.id ? 'page' : undefined}><span>{String(chapter.chapter_order).padStart(2, '0')}</span><strong>{chapter.title}</strong></a></li>)}</ul>
+            </details>
+          </section>)}
+        </nav>
+        {guides.length === 0 && !loadError && <p class="teacher-reader-empty-note">Seus próximos guias serão organizados aqui por disciplina e módulo.</p>}
+        <div class="teacher-private-note"><span aria-hidden="true">▣</span><p>Este espaço e seus materiais são visíveis somente para sua conta de professor.</p></div>
+      </div>
     </aside>
 
-    <section class="teacher-guide-viewer" aria-label="Leitor de guia do professor">
-      {selectedGuide ? <>
-        <header class="teacher-guide-heading"><div class="min-w-0"><p class="text-[10px] font-bold uppercase tracking-[.18em] text-accent-light">{selectedGuide.disciplineName} <span class="mx-1 text-border-light">·</span> {selectedGuide.moduleName}</p><h2 class="mt-2 font-display text-xl font-semibold leading-snug sm:text-2xl">{selectedGuide.title}</h2><p class="mt-2 text-xs text-text-muted-light dark:text-text-muted-dark">PDF original · {selectedGuide.page_count} páginas</p></div>{signedUrl && <div class="guide-file-actions"><a href={signedUrl} target="_blank" rel="noreferrer" class="guide-file-button">Abrir em nova aba ↗</a><a href={signedUrl} download={selectedGuide.source_filename} class="guide-file-button guide-file-download">Baixar PDF ↓</a></div>}</header>
-        {signedUrl ? <iframe class="teacher-guide-pdf" src={`${signedUrl}#toolbar=1&navpanes=0&view=FitH`} title={`Guia do professor: ${selectedGuide.title}`} loading="eager"></iframe> : <div class="teacher-guide-error" role="alert"><strong>Não foi possível abrir este guia.</strong><p>{viewerError ? 'Confira se o arquivo está no armazenamento privado do Supabase e tente novamente.' : 'Tente novamente em instantes.'}</p></div>}
-      </> : <div class="teacher-guide-empty"><span aria-hidden="true">▤</span><p class="mt-4 text-[10px] font-bold uppercase tracking-[.18em] text-accent-light">Biblioteca de ensino</p><h2 class="mt-2 font-display text-2xl font-semibold">Seus guias ficarão aqui</h2><p class="mt-3 max-w-md text-sm leading-relaxed text-text-muted-light dark:text-text-muted-dark">Quando você enviar os próximos módulos, eles poderão ser adicionados a esta área sem misturar o material do professor com as apostilas dos alunos.</p></div>}
-    </section>
-  </main>
+    <main class="teacher-reader-main">
+      {loadError ? <section class="teacher-reader-empty" role="alert"><p class="teacher-eyebrow">Biblioteca de ensino</p><h2 class="mt-3 font-display text-3xl font-semibold">Não foi possível carregar o guia</h2><p class="mt-3 text-sm text-text-muted-light dark:text-text-muted-dark">Tente atualizar a página. Se o problema continuar, confira o acesso às tabelas de guias no Supabase.</p></section> : selectedGuide && activeChapter ? <article class="teacher-chapter">
+        <a href={`/professor/guias?guia=${selectedGuide.id}`} class="teacher-module-kicker">{selectedGuide.disciplineName}<span></span>{selectedGuide.moduleName}</a>
+        <p class="teacher-eyebrow mt-8">{String(activeChapter.chapter_order).padStart(2, '0')} · MATERIAL DO PROFESSOR</p>
+        <h2 class="mt-2 font-display text-4xl font-semibold leading-tight sm:text-5xl">{activeChapter.title}</h2>
+        <div class="teacher-chapter-meta"><span>{selectedGuide.title}</span><span>Guia privado de planejamento</span></div>
+        <div class="teacher-content prose prose-base mt-8 max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-accent-light prose-blockquote:border-l-highlight-light prose-blockquote:bg-highlight-light/10 prose-blockquote:px-4 prose-blockquote:py-1 dark:prose-invert" set:html={contentHtml}></div>
+        <nav class="teacher-chapter-pagination" aria-label="Navegação entre capítulos">
+          {previousChapter ? <a class="teacher-previous" href={chapterHref(selectedGuide.id, previousChapter.slug)}><span aria-hidden="true">←</span><span><small>Capítulo anterior</small><strong>{previousChapter.title}</strong></span></a> : <span></span>}
+          {nextChapter && <a class="teacher-next" href={chapterHref(selectedGuide.id, nextChapter.slug)}><span class="teacher-eyebrow">Próximo capítulo</span><strong>{nextChapter.title}</strong><span aria-hidden="true">→</span></a>}
+        </nav>
+      </article> : <section class="teacher-reader-empty"><p class="teacher-eyebrow">Biblioteca de ensino</p><h2 class="mt-3 font-display text-3xl font-semibold">Seus guias ficarão aqui</h2><p class="mt-3 max-w-lg text-sm leading-relaxed text-text-muted-light dark:text-text-muted-dark">Quando você enviar os próximos módulos, eles poderão ser adicionados a esta área sem misturar o material do professor com as apostilas dos alunos.</p></section>}
+    </main>
+
+    <aside class="teacher-reader-right"><div class="teacher-reader-right-inner">
+      {activeChapter && selectedGuide ? <>
+        <p class="teacher-eyebrow">Planejamento</p>
+        <h2 class="mt-2 font-display text-lg font-semibold">Material de apoio</h2>
+        <p class="mt-2 text-xs leading-relaxed text-text-muted-light dark:text-text-muted-dark">Este conteúdo foi estruturado para leitura no mesmo formato editorial das apostilas dos alunos. Ele permanece separado e não aparece na área estudantil.</p>
+        <div class="teacher-guide-info mt-5"><span>DISCIPLINA</span><strong>{selectedGuide.disciplineName}</strong><span>MÓDULO</span><strong>{selectedGuide.moduleName}</strong><span>CAPÍTULO</span><strong>{activeChapter.chapter_order} de {selectedGuide.chapters.length}</strong></div>
+        <a class="teacher-source-link" href={`/api/professor/guias/${selectedGuide.id}/arquivo`}><span aria-hidden="true">↓</span> Baixar PDF original</a>
+      </> : <div class="teacher-reader-hint">Selecione um capítulo do guia na navegação para ler o conteúdo.</div>}
+    </div></aside>
+  </div>
 </BaseLayout>
 
 <style>
-  .teacher-guides-sidebar { min-width:0; }
-  .guide-nav-item { display:flex; align-items:center; gap:10px; border:1px solid transparent; border-radius:13px; padding:10px; color:var(--color-text-main-light); transition:background .15s,border-color .15s; }
-  .guide-nav-item:hover { background:color-mix(in srgb,var(--color-accent-light) 7%,transparent); }
-  .guide-nav-item-active { border-color:color-mix(in srgb,var(--color-accent-light) 24%,var(--color-border-light)); background:color-mix(in srgb,var(--color-accent-light) 8%,transparent); }
-  .guide-nav-index { display:grid; width:32px; height:32px; flex:none; place-items:center; border-radius:10px; background:color-mix(in srgb,var(--color-accent-light) 12%,transparent); color:var(--color-accent-light); font-family:'Orbitron',sans-serif; font-size:12px; font-weight:700; }
-  .guide-nav-item > span:last-child { display:grid; min-width:0; gap:3px; }
-  .guide-nav-item strong { overflow:hidden; font-size:12px; text-overflow:ellipsis; white-space:nowrap; }
-  .guide-nav-item small { color:var(--color-text-muted-light); font-size:10px; }
-  :global(.dark) .guide-nav-item { color:var(--color-text-main-dark); }
-  :global(.dark) .guide-nav-item-active { border-color:color-mix(in srgb,var(--color-accent-dark) 25%,var(--color-border-dark)); }
-  :global(.dark) .guide-nav-item small { color:var(--color-text-muted-dark); }
-  .teacher-guides-private { display:flex; gap:10px; margin-top:24px; border:1px solid var(--color-border-light); border-radius:14px; padding:13px; color:var(--color-text-muted-light); font-size:11px; line-height:1.5; }
-  .teacher-guides-private > span { color:var(--color-accent-light); font-size:15px; }
-  :global(.dark) .teacher-guides-private { border-color:var(--color-border-dark); color:var(--color-text-muted-dark); }
-  .teacher-guide-viewer { min-width:0; overflow:hidden; border:1px solid var(--color-border-light); border-radius:20px; background:var(--color-surface-light); }
-  .teacher-guide-heading { display:flex; align-items:center; justify-content:space-between; gap:18px; border-bottom:1px solid var(--color-border-light); padding:18px 20px; }
-  .guide-file-actions { display:flex; flex:none; flex-wrap:wrap; gap:8px; }
-  .guide-file-button { display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--color-border-light); border-radius:999px; padding:9px 12px; color:var(--color-text-main-light); font-size:11px; font-weight:700; transition:border-color .15s,color .15s; }
-  .guide-file-button:hover { border-color:var(--color-accent-light); color:var(--color-accent-light); }
-  .guide-file-download { border-color:var(--color-accent-light); background:var(--color-accent-light); color:white; }
-  .teacher-guide-pdf { display:block; width:100%; height:min(78dvh,1100px); min-height:650px; border:0; background:#ece8de; }
-  .teacher-guide-error,.teacher-guide-empty { display:grid; min-height:55vh; place-content:center; padding:32px; text-align:center; }
-  .teacher-guide-error { color:#b91c1c; }
-  .teacher-guide-error p { margin-top:8px; font-size:13px; }
-  .teacher-guide-empty > span { font-size:40px; color:var(--color-accent-light); }
-  :global(.dark) .teacher-guide-viewer { border-color:var(--color-border-dark); background:var(--color-surface-dark); }
-  :global(.dark) .teacher-guide-heading { border-color:var(--color-border-dark); }
-  :global(.dark) .guide-file-button { border-color:var(--color-border-dark); color:var(--color-text-main-dark); }
-  :global(.dark) .guide-file-download { border-color:var(--color-accent-dark); background:var(--color-accent-dark); color:white; }
-  @media(max-width:800px) { .teacher-guide-heading { align-items:flex-start; flex-direction:column; } .teacher-guide-pdf { height:75dvh; min-height:520px; } }
-  @media(max-width:500px) { .teacher-guide-pdf { height:70dvh; min-height:450px; } .guide-file-actions { width:100%; } .guide-file-button { flex:1; } }
+  .teacher-reader { display:grid; min-height:calc(100dvh - 76px); grid-template-columns:250px minmax(0,1fr) 250px; }
+  .teacher-reader-left,.teacher-reader-right { min-width:0; border-color:var(--color-border-light); }
+  .teacher-reader-left { border-right:1px solid var(--color-border-light); }
+  .teacher-reader-right { border-left:1px solid var(--color-border-light); }
+  .teacher-reader-left-inner,.teacher-reader-right-inner { position:sticky; top:84px; max-height:calc(100dvh - 84px); overflow:auto; padding:24px 18px; }
+  .teacher-reader-main { min-width:0; padding:clamp(24px,5vw,64px) clamp(22px,6vw,84px); }
+  .teacher-chapter { margin:0 auto; max-width:780px; }
+  .back-admin { color:var(--color-accent-light); font-size:11px; font-weight:700; }
+  .teacher-eyebrow { color:var(--color-accent-light); font-size:10px; font-weight:800; letter-spacing:.17em; text-transform:uppercase; }
+  .teacher-guide-group { margin-top:20px; }
+  .teacher-guide-discipline { margin:0 8px 8px; color:var(--color-text-muted-light); font-size:9px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+  .teacher-module-group summary { display:flex; align-items:center; gap:9px; cursor:pointer; list-style:none; border-bottom:1px solid var(--color-border-light); padding:9px 7px 12px; }
+  .teacher-module-group summary::-webkit-details-marker { display:none; }
+  .teacher-module-number { display:grid; width:30px; height:30px; flex:none; place-items:center; border-radius:9px; background:color-mix(in srgb,var(--color-accent-light) 12%,transparent); color:var(--color-accent-light); font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; }
+  .teacher-module-group summary strong,.teacher-module-group summary small { display:block; }
+  .teacher-module-group summary strong { font-size:11px; line-height:1.4; }
+  .teacher-module-group summary small { margin-top:3px; color:var(--color-text-muted-light); font-size:9px; }
+  .teacher-module-chevron { color:var(--color-text-muted-light); transition:transform .2s; }
+  .teacher-module-group[open] .teacher-module-chevron { transform:rotate(180deg); }
+  .teacher-module-group ul { margin:8px 0 0 12px; border-left:1px solid var(--color-border-light); padding:0 0 0 8px; list-style:none; }
+  .teacher-chapter-link { display:flex; align-items:flex-start; gap:8px; border-radius:8px; padding:8px; color:var(--color-text-muted-light); font-size:10px; line-height:1.4; }
+  .teacher-chapter-link:hover,.teacher-chapter-current { background:color-mix(in srgb,var(--color-accent-light) 8%,transparent); color:var(--color-accent-light); }
+  .teacher-chapter-link span { flex:none; font-variant-numeric:tabular-nums; }
+  .teacher-chapter-link strong { font-weight:600; }
+  .teacher-private-note { display:flex; gap:9px; margin-top:24px; border:1px solid var(--color-border-light); border-radius:13px; padding:11px; color:var(--color-text-muted-light); font-size:10px; line-height:1.5; }
+  .teacher-private-note span { color:var(--color-accent-light); }
+  .teacher-module-kicker { display:inline-flex; align-items:center; gap:9px; color:var(--color-text-muted-light); font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
+  .teacher-module-kicker span { width:25px; height:1px; background:var(--color-border-light); }
+  .teacher-chapter-meta { display:flex; flex-wrap:wrap; gap:10px 18px; margin-top:20px; color:var(--color-text-muted-light); font-size:10px; text-transform:uppercase; letter-spacing:.08em; }
+  .teacher-chapter-meta span+span { border-left:1px solid var(--color-border-light); padding-left:18px; }
+  .teacher-chapter-pagination { display:flex; justify-content:space-between; gap:12px; margin-top:52px; border-top:1px solid var(--color-border-light); padding-top:20px; }
+  .teacher-previous,.teacher-next { display:flex; max-width:48%; align-items:center; gap:10px; border:1px solid var(--color-border-light); border-radius:13px; padding:10px 13px; color:var(--color-text-main-light); }
+  .teacher-previous span:last-child { display:grid; gap:3px; }
+  .teacher-previous small,.teacher-next .teacher-eyebrow { color:var(--color-text-muted-light); font-size:9px; }
+  .teacher-previous strong,.teacher-next strong { font-size:11px; }
+  .teacher-next { margin-left:auto; justify-content:space-between; border-color:var(--color-accent-light); background:var(--color-accent-light); color:white; }
+  .teacher-next .teacher-eyebrow { color:white; }
+  .teacher-guide-info { display:grid; gap:5px; border-radius:13px; background:color-mix(in srgb,var(--color-accent-light) 6%,var(--color-surface-light)); padding:14px; }
+  .teacher-guide-info span { margin-top:7px; color:var(--color-text-muted-light); font-size:9px; font-weight:800; letter-spacing:.12em; }
+  .teacher-guide-info strong { font-size:11px; line-height:1.4; }
+  .teacher-source-link { display:inline-flex; align-items:center; gap:8px; margin-top:16px; color:var(--color-accent-light); font-size:11px; font-weight:700; }
+  .teacher-source-link:hover { text-decoration:underline; }
+  .teacher-reader-empty { display:grid; min-height:55vh; align-content:center; }
+  .teacher-reader-empty-note,.teacher-reader-hint { border:1px dashed var(--color-border-light); border-radius:13px; padding:14px; color:var(--color-text-muted-light); font-size:11px; line-height:1.6; }
+  :global(.dark) .teacher-reader-left,:global(.dark) .teacher-reader-right { border-color:var(--color-border-dark); }
+  :global(.dark) .teacher-guide-discipline,:global(.dark) .teacher-module-group summary small,:global(.dark) .teacher-chapter-link,:global(.dark) .teacher-private-note,:global(.dark) .teacher-module-kicker,:global(.dark) .teacher-chapter-meta,:global(.dark) .teacher-previous small,:global(.dark) .teacher-next .teacher-eyebrow,:global(.dark) .teacher-guide-info span,:global(.dark) .teacher-reader-empty-note,:global(.dark) .teacher-reader-hint { color:var(--color-text-muted-dark); }
+  :global(.dark) .teacher-module-group summary,:global(.dark) .teacher-module-group ul,:global(.dark) .teacher-private-note,:global(.dark) .teacher-chapter-meta span+span,:global(.dark) .teacher-chapter-pagination { border-color:var(--color-border-dark); }
+  :global(.dark) .teacher-previous { border-color:var(--color-border-dark); color:var(--color-text-main-dark); }
+  :global(.dark) .teacher-guide-info { background:color-mix(in srgb,var(--color-accent-dark) 8%,var(--color-surface-dark)); }
+  :global(.dark) .teacher-reader-empty-note,:global(.dark) .teacher-reader-hint { border-color:var(--color-border-dark); }
+  @media(max-width:1199px) { .teacher-reader { grid-template-columns:235px minmax(0,1fr); } .teacher-reader-right { display:none; } }
+  @media(max-width:767px) { .teacher-reader { display:block; } .teacher-reader-left { border-right:0; border-bottom:1px solid var(--color-border-light); } .teacher-reader-left-inner { position:static; max-height:none; padding:15px 18px; } .teacher-reader-left-inner>p:not(.teacher-eyebrow) { display:none; } .teacher-guide-nav { display:flex; gap:12px; margin-top:12px; overflow-x:auto; padding-bottom:5px; } .teacher-guide-group { min-width:260px; margin-top:0; } .teacher-private-note { display:none; } .teacher-reader-main { padding:30px 20px; } .teacher-reader-left-inner .back-admin { display:inline-block; } }
 </style>

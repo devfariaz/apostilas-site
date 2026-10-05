@@ -4,10 +4,10 @@ import { createSupabaseServerClient } from './lib/supabase';
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
   const isApostila = pathname === '/apostila' || pathname.startsWith('/apostila/');
-  const isAdmin = pathname === '/admin' || pathname.startsWith('/admin/') || pathname === '/api/admin' || pathname.startsWith('/api/admin/') || pathname === '/professor' || pathname.startsWith('/professor/');
+  const isAdmin = pathname === '/admin' || pathname.startsWith('/admin/') || pathname === '/api/admin' || pathname.startsWith('/api/admin/') || pathname === '/professor' || pathname.startsWith('/professor/') || pathname === '/api/professor' || pathname.startsWith('/api/professor/');
   if (!isApostila && !isAdmin) return next();
 
-  const apiRequest = pathname === '/api/admin' || pathname.startsWith('/api/admin/');
+  const apiRequest = pathname === '/api/admin' || pathname.startsWith('/api/admin/') || pathname === '/api/professor' || pathname.startsWith('/api/professor/');
   const reject = (status: number, message: string) => apiRequest
     ? Response.json({ error: message }, { status })
     : context.redirect(status === 401 ? `/login?next=${encodeURIComponent(pathname)}` : '/aguardando-aprovacao');
