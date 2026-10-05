@@ -11,10 +11,11 @@
   --color-highlight-light: #E8B931; --color-highlight-dark: #D97706;
   --color-border-light: #E5E0D8; --color-border-dark: #2A2A2E;
   --font-sans: 'Exo 2', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'Exo 2', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Orbitron', ui-sans-serif, system-ui, sans-serif;
 }
 
 :root { color-scheme: light; font-family: 'Exo 2', ui-sans-serif, system-ui, sans-serif; }
+h1, h2, h3, h4, h5, h6 { font-family: 'Orbitron', ui-sans-serif, system-ui, sans-serif; }
 :root.dark { color-scheme: dark; --color-accent-light: var(--color-accent-dark); }
 html { scroll-behavior: smooth; }
 body { margin: 0; background: #FAF7F2; color: #1E1E1E; }
