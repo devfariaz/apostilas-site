@@ -14,16 +14,19 @@ let disciplineName = disciplines.find((item) => item.slug === discipline)?.name 
 let user = null; let progress: any[] = []; let completed = false; let note = '';
 let databaseLesson: any = null;
 let databaseSiblings: any[] = [];
+let databaseModules: { id: string; name: string }[] = [];
 try {
   const supabase = createSupabaseServerClient(Astro.cookies, Astro.request);
   const { data } = await supabase.auth.getUser(); user = data.user;
   if (user) {
-    const [current, siblings, subject] = await Promise.all([
+    const [current, siblings, subject, courseModules] = await Promise.all([
       supabase.from('apostilas').select('*').eq('discipline_slug', discipline).eq('slug', slug).eq('published', true).maybeSingle(),
-      supabase.from('apostilas').select('slug,title,module,lesson_order,discipline_slug').eq('discipline_slug', discipline).eq('published', true).order('lesson_order'),
-      supabase.from('disciplines').select('name').eq('slug', discipline).maybeSingle()
+      supabase.from('apostilas').select('slug,title,module,module_id,lesson_order,discipline_slug').eq('discipline_slug', discipline).eq('published', true),
+      supabase.from('disciplines').select('name').eq('slug', discipline).maybeSingle(),
+      supabase.from('modules').select('id,name').eq('discipline_slug', discipline).order('sort_order')
     ]);
     databaseLesson = current.data; databaseSiblings = siblings.data ?? []; disciplineName = subject.data?.name ?? disciplineName;
+    databaseModules = courseModules.data ?? [];
     const lessonId = databaseLesson?.slug ?? staticLesson?.id;
     if (!lessonId) return Astro.redirect('/');
     const [p, n] = await Promise.all([
@@ -37,17 +40,23 @@ if (!staticLesson && !databaseLesson) return Astro.redirect('/');
 const lessonId = databaseLesson?.slug ?? staticLesson!.id;
 const data = databaseLesson ? { title: databaseLesson.title, module: databaseLesson.module, summary: databaseLesson.summary, tags: databaseLesson.tags ?? [] } : staticLesson!.data;
 const Content = !databaseLesson && staticLesson ? (await render(staticLesson)).Content : null;
-const databaseNav = databaseSiblings.map((entry) => ({ id: entry.slug, data: { discipline: entry.discipline_slug, title: entry.title, module: entry.module || 'Capítulos', order: entry.lesson_order } }));
-const staticNav = allLessons.filter((entry) => entry.data.discipline === discipline && !databaseSiblings.some((item) => item.slug === entry.id.split('/').at(-1))).map((entry) => ({ id: entry.id, data: { ...entry.data, discipline: entry.data.discipline } }));
-const sameDiscipline = [...databaseNav, ...staticNav].sort((a, b) => a.data.order - b.data.order);
+const moduleOrder = (moduleId?: string, moduleName?: string) => {
+  const index = databaseModules.findIndex((item) => item.id === moduleId || item.name === moduleName);
+  return index < 0 ? databaseModules.length : index;
+};
+const databaseNav = databaseSiblings.map((entry) => ({ id: entry.slug, data: { discipline: entry.discipline_slug, title: entry.title, module: entry.module || 'Capítulos', moduleOrder: moduleOrder(entry.module_id, entry.module), order: entry.lesson_order } }));
+const staticNav = allLessons.filter((entry) => entry.data.discipline === discipline && !databaseSiblings.some((item) => item.slug === entry.id.split('/').at(-1))).map((entry) => ({ id: entry.id, data: { ...entry.data, discipline: entry.data.discipline, moduleOrder: moduleOrder(undefined, entry.data.module) } }));
+const sameDiscipline = [...databaseNav, ...staticNav].sort((a, b) => a.data.moduleOrder - b.data.moduleOrder || a.data.order - b.data.order);
 const bodyHtml = databaseLesson ? sanitizeHtml(await marked.parse(databaseLesson.body_markdown ?? '')) : '';
 const practiceHtml = databaseLesson ? sanitizeHtml(await marked.parse(databaseLesson.practice_markdown ?? '')) : '';
 const essentialPoints: { title: string; description: string }[] = Array.isArray(databaseLesson?.essential_points) ? databaseLesson.essential_points : [];
 const chapterIndex = sameDiscipline.findIndex((entry) => entry.id.split('/').at(-1) === lessonId);
+const previousLesson = chapterIndex > 0 ? sameDiscipline[chapterIndex - 1] : null;
 const nextLesson = chapterIndex >= 0 ? sameDiscipline[chapterIndex + 1] : null;
 ---
 <DocLayout title={data.title} description={data.summary} user={user} lessons={sameDiscipline} currentId={lessonId} progress={progress} discipline={discipline} lessonSlug={lessonId} completed={completed} note={note}>
   <div class="mb-8"><a href="/" class="text-sm text-text-muted-light hover:text-accent-light dark:text-text-muted-dark">Disciplinas</a><span class="mx-2 text-text-muted-light">/</span><a href={`/apostila/${discipline}`} class="text-sm text-accent-light">{disciplineName}</a></div>
+  {previousLesson && <a class="previous-lesson" href={`/apostila/${discipline}/${previousLesson.id.split('/').at(-1)}`}><span aria-hidden="true">←</span><span><small>Capítulo anterior</small><strong>{previousLesson.data.title}</strong></span></a>}
   <p class="text-xs font-bold uppercase tracking-[.2em] text-accent-light">Módulo {data.module} <span class="mx-2 text-border-light">—</span> {disciplineName}</p><h1 class="mt-3 font-display text-4xl font-semibold leading-tight tracking-tight md:text-5xl">{data.title}</h1><p class="mt-4 text-lg leading-relaxed text-text-muted-light dark:text-text-muted-dark">{data.summary}</p><div class="mt-5 flex flex-wrap gap-4 border-b border-border-light pb-5 text-[10px] font-semibold uppercase tracking-widest text-text-muted-light dark:border-border-dark dark:text-text-muted-dark"><span>Capítulo {String(Math.max(1, chapterIndex + 1)).padStart(2, '0')} de {sameDiscipline.length}</span><span>{databaseLesson?.reading_minutes ?? 10} min de leitura</span><span>Nível {databaseLesson?.difficulty ?? 'Introdutório'}</span></div>
   <div class="mt-8 flex flex-wrap gap-2">{data.tags.map((tag: string) => <a href={`/buscar?tag=${encodeURIComponent(tag)}`} class="rounded-full bg-black/5 px-3 py-1 text-xs hover:bg-accent-light hover:text-white dark:bg-white/10">#{tag}</a>)}</div>
   <nav class="lesson-tabs mt-10 flex gap-6 border-b border-border-light dark:border-border-dark" role="tablist" aria-label="Conteúdo do capítulo"><button type="button" role="tab" aria-selected="true" aria-controls="lesson-reading" id="lesson-tab-reading">Aula</button><button type="button" role="tab" aria-selected="false" aria-controls="lesson-practice" id="lesson-tab-practice">Prática guiada</button></nav>
@@ -67,6 +76,14 @@ const nextLesson = chapterIndex >= 0 ? sameDiscipline[chapterIndex + 1] : null;
   lessonTabs.forEach((tab) => tab.addEventListener('click', () => { lessonTabs.forEach((item) => { const selected = item === tab; item.setAttribute('aria-selected', String(selected)); const panel = document.getElementById(item.getAttribute('aria-controls')!); if (panel) panel.hidden = !selected; }); }));
 </script>
 <style>
+  .previous-lesson { display:inline-flex; max-width:min(100%,32rem); align-items:center; gap:9px; margin:-.75rem 0 1rem; border:1px solid var(--color-border-light); border-radius:999px; padding:7px 12px 7px 9px; color:var(--color-text-muted-light); transition:border-color .18s,color .18s,background .18s; }
+  .previous-lesson:hover { border-color:color-mix(in srgb,var(--color-accent-light) 45%,var(--color-border-light)); background:color-mix(in srgb,var(--color-accent-light) 5%,transparent); color:var(--color-accent-light); }
+  .previous-lesson > span:first-child { display:grid; width:23px; height:23px; flex:none; place-items:center; border-radius:50%; background:color-mix(in srgb,var(--color-text-muted-light) 10%,transparent); font-size:13px; }
+  .previous-lesson > span:last-child { display:grid; min-width:0; gap:1px; }
+  .previous-lesson small { font-size:9px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; }
+  .previous-lesson strong { overflow:hidden; font-size:11px; font-weight:600; text-overflow:ellipsis; white-space:nowrap; }
+  :global(.dark) .previous-lesson { border-color:var(--color-border-dark); color:var(--color-text-muted-dark); }
+  :global(.dark) .previous-lesson:hover { border-color:color-mix(in srgb,var(--color-accent-dark) 45%,var(--color-border-dark)); color:var(--color-accent-dark); }
   .lesson-tabs [role="tab"] { padding:.7rem .25rem; border-bottom:2px solid transparent; font-size:.72rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; }
   .lesson-tabs [role="tab"][aria-selected="true"] { border-color:var(--color-accent-light); color:var(--color-accent-light); }
   #lesson-reading[hidden], #lesson-practice[hidden] { display:none; }
