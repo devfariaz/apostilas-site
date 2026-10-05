@@ -4,7 +4,7 @@ import { createSupabaseServerClient } from './lib/supabase';
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
   const isApostila = pathname === '/apostila' || pathname.startsWith('/apostila/');
-  const isAdmin = pathname === '/admin' || pathname.startsWith('/admin/') || pathname === '/api/admin' || pathname.startsWith('/api/admin/');
+  const isAdmin = pathname === '/admin' || pathname.startsWith('/admin/') || pathname === '/api/admin' || pathname.startsWith('/api/admin/') || pathname === '/professor' || pathname.startsWith('/professor/');
   if (!isApostila && !isAdmin) return next();
 
   const apiRequest = pathname === '/api/admin' || pathname.startsWith('/api/admin/');
