@@ -117,6 +117,7 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
           {previousLesson && <a data-select-chapter href={`#${previousLesson.slug}`} class="previous-chapter"><span aria-hidden="true">←</span><span><small>Capítulo anterior</small><strong>{previousLesson.title}</strong></span></a>}
           <div class="chapter-title-row"><span>{String(lesson.lesson_order + 1).padStart(2, '0')}</span><h2 data-chapter-title class="font-display text-3xl font-semibold leading-tight">{lesson.title}</h2></div>
           {lesson.summary && <p class="mb-6 ml-12 text-sm leading-relaxed text-text-muted-light dark:text-text-muted-dark">{lesson.summary}</p>}
+          <p class="chapter-reading-time mt-3 mb-5 ml-12" aria-label={`Tempo estimado de leitura: ${lesson.reading_minutes ?? 10} minutos`}><span aria-hidden="true">◷</span> {lesson.reading_minutes ?? 10} min de leitura</p>
           <div class="chapter-tabs" role="tablist" aria-label={`Conteúdo de ${lesson.title}`}><button type="button" id={`${lesson.slug}-theory-tab`} role="tab" aria-selected="true" aria-controls={`${lesson.slug}-theory`} data-chapter-tab="theory">Teoria</button><button type="button" id={`${lesson.slug}-practice-tab`} role="tab" aria-selected="false" aria-controls={`${lesson.slug}-practice`} data-chapter-tab="practice">Guia de bancada</button></div>
           <button type="button" class="download-chapter-pdf" data-download-chapter title="Na janela de impressão, escolha Salvar como PDF."><span aria-hidden="true">⇩</span> Salvar capítulo em PDF</button>
           <section id={`${lesson.slug}-theory`} role="tabpanel" aria-labelledby={`${lesson.slug}-theory-tab`} data-chapter-panel="theory">
@@ -426,6 +427,9 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
   :global(.dark) .practice-empty p { color:var(--color-text-muted-dark); }
   .chapter-title-row { display:grid; grid-template-columns:34px minmax(0,1fr); gap:12px; align-items:start; }
   .chapter-title-row > span { font-family:'Exo 2',sans-serif; font-size:1.1rem; font-weight:700; color:var(--color-accent-light); }
+  .chapter-reading-time { display:flex; align-items:center; gap:6px; color:var(--color-text-muted-light); font-size:11px; line-height:1.4; }
+  .chapter-reading-time span { font-size:14px; }
+  :global(.dark) .chapter-reading-time { color:var(--color-text-muted-dark); }
   .key-idea { display:flex; gap:12px; align-items:flex-start; margin:22px 0 26px; border-radius:14px; background:#e9e5da; padding:22px; font-family:'Exo 2',sans-serif; font-size:1.1rem; font-weight:600; line-height:1.6; }
   :global(.dark) .key-idea { background:var(--color-surface-dark); }
   .guided-practice { margin-top:34px; border-radius:14px; background:#e9e5da; padding:22px; }
