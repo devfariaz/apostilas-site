@@ -31,7 +31,7 @@ const { data: { user } } = await supabase.auth.getUser();
       <section id="panel-teacher-guides" class="admin-panel rounded-3xl border border-border-light bg-surface-light p-6 dark:border-border-dark dark:bg-surface-dark" role="tabpanel" aria-labelledby="tab-teacher-guides" tabindex="0" hidden>
         <p class="text-xs font-bold uppercase tracking-[.18em] text-accent-light">Área exclusiva do professor</p>
         <div class="flex flex-wrap items-center justify-between gap-3"><div><h2 class="font-display text-2xl font-semibold">Guias do professor</h2><p class="mt-2 max-w-2xl text-sm text-text-muted-light dark:text-text-muted-dark">Cadastre os módulos e escreva os capítulos no banco de dados. O PDF original é opcional; o conteúdo lido no site é o Markdown de cada capítulo.</p></div><button type="button" class="admin-primary" id="teacher-guide-new">＋ Novo guia</button></div>
-        <div class="admin-list-filters"><select id="teacher-guide-discipline-filter" class="admin-input"><option value="all">Todas as disciplinas</option></select><select id="teacher-guide-module-filter" class="admin-input"><option value="all">Todos os módulos</option></select><select id="teacher-guide-select" class="admin-input"><option value="">Selecione um guia</option></select></div>
+        <div class="teacher-guide-filters"><label>Disciplina<select id="teacher-guide-discipline-filter" class="admin-input"><option value="all">Todas as disciplinas</option></select></label><label>Módulo<select id="teacher-guide-module-filter" class="admin-input"><option value="all">Todos os módulos</option></select></label><label>Capítulo<select id="teacher-chapter-select" class="admin-input"><option value="all">Todos os capítulos</option></select></label></div>
         <div id="teacher-guide-manager" class="mt-5" hidden>
           <div class="teacher-guide-manager-head"><div class="min-w-0"><p class="text-xs font-bold uppercase tracking-widest text-accent-light">Guia selecionado</p><h3 id="teacher-guide-heading" class="mt-1 truncate font-display text-xl font-semibold"></h3><p id="teacher-guide-file" class="mt-1 text-xs text-text-muted-light dark:text-text-muted-dark"></p></div><div class="flex flex-wrap gap-2"><button type="button" id="teacher-guide-edit" class="admin-secondary">Editar guia</button><button type="button" id="teacher-guide-delete" class="admin-danger">Excluir guia</button><button type="button" id="teacher-chapter-new" class="admin-primary">＋ Novo capítulo</button></div></div>
           <div class="teacher-chapter-list-head"><h3 class="font-display text-lg font-semibold">Capítulos do guia</h3><span id="teacher-chapter-count" class="rounded-full bg-black/[.04] px-3 py-1 text-xs text-text-muted-light dark:bg-white/[.06] dark:text-text-muted-dark"></span></div>
@@ -57,20 +57,27 @@ const { data: { user } } = await supabase.auth.getUser();
   </main>
 </BaseLayout>
 <style>
+  .teacher-guide-filters { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.75rem; margin-top:1rem; }
+  .teacher-guide-filters label { display:grid; gap:.4rem; color:var(--color-text-muted-light); font-size:.72rem; font-weight:700; }
+  :global(.dark) .teacher-guide-filters label { color:var(--color-text-muted-dark); }
+  @media(max-width:700px) { .teacher-guide-filters { grid-template-columns:1fr; } }
   .teacher-guide-manager-head { display:flex; align-items:center; justify-content:space-between; gap:1rem; border:1px solid #e5e0d8; border-radius:18px; padding:1rem; background:color-mix(in srgb,var(--color-accent-light) 3%,white); }
   :global(.dark) .teacher-guide-manager-head { border-color:#2a2a2e; background:color-mix(in srgb,var(--color-accent-light) 6%,#1e1e22); }
   .teacher-chapter-list-head { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-top:1.5rem; padding:0 .25rem; }
-  .teacher-chapter-admin-row { display:grid; min-width:0; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:.75rem; border:1px solid #e5e0d8; border-radius:14px; background:#fff; padding:.8rem 1rem; }
-  :global(.dark) .teacher-chapter-admin-row { border-color:#2a2a2e; background:#1e1e22; }
-  .teacher-chapter-admin-row>div { display:grid; min-width:0; grid-template-columns:1.8rem minmax(0,1fr); align-items:center; gap:.7rem; }
-  .teacher-chapter-admin-row strong { overflow:hidden; font-size:.82rem; text-overflow:ellipsis; white-space:nowrap; }
-  .teacher-chapter-admin-order { display:grid; width:1.8rem; height:1.8rem; flex:none; place-items:center; border-radius:999px; background:color-mix(in srgb,var(--color-accent-light) 12%,transparent); color:var(--color-accent-light); font-size:.68rem; font-weight:800; }
-  .teacher-chapter-admin-row button { min-height:34px; border-radius:9px; padding:.35rem .6rem; white-space:nowrap; }
-  .teacher-chapter-admin-row button:hover { background:color-mix(in srgb,var(--color-accent-light) 8%,transparent); }
-  .teacher-chapter-admin-row button:last-child { color:#dc2626; }
-  .teacher-chapter-admin-row button:last-child:hover { background:#dc262610; }
+  :global(.teacher-chapter-admin-row) { display:grid; min-width:0; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:.85rem; border:1px solid #e5e0d8; border-radius:14px; background:#fff; padding:.85rem 1rem; }
+  :global(.dark .teacher-chapter-admin-row) { border-color:#2a2a2e; background:#1e1e22; }
+  :global(.teacher-chapter-admin-copy) { display:grid; min-width:0; grid-template-columns:2rem minmax(0,1fr); align-items:center; gap:.75rem; }
+  :global(.teacher-chapter-admin-row strong) { overflow-wrap:anywhere; font-size:.88rem; font-weight:700; line-height:1.45; }
+  :global(.teacher-chapter-admin-order) { display:grid; width:2rem; height:2rem; place-items:center; border-radius:10px; background:color-mix(in srgb,var(--color-accent-light) 12%,transparent); color:var(--color-accent-light); font-size:.7rem; font-weight:800; font-variant-numeric:tabular-nums; }
+  :global(.teacher-chapter-admin-actions) { display:flex; flex:none; align-items:center; gap:.5rem; }
+  :global(.teacher-chapter-admin-row button) { min-height:36px; border:1px solid var(--color-border-light); border-radius:9px; background:var(--color-surface-light); padding:.4rem .7rem; color:var(--color-accent-light); font-size:.75rem; font-weight:700; white-space:nowrap; }
+  :global(.teacher-chapter-admin-row button:hover) { background:color-mix(in srgb,var(--color-accent-light) 8%,var(--color-surface-light)); }
+  :global(.teacher-chapter-admin-row .teacher-chapter-delete) { border-color:#fecaca; color:#dc2626; }
+  :global(.teacher-chapter-admin-row .teacher-chapter-delete:hover) { background:#dc262610; }
+  :global(.dark .teacher-chapter-admin-row button) { border-color:var(--color-border-dark); background:var(--color-bg-dark); color:var(--color-accent-dark); }
+  :global(.dark .teacher-chapter-admin-row .teacher-chapter-delete) { border-color:#7f1d1d; color:#f87171; }
   :global(.dark) .teacher-chapter-list-head>span { background:#ffffff0a; }
-  @media(max-width:520px) { .teacher-chapter-admin-row { grid-template-columns:minmax(0,1fr) auto auto; gap:.3rem; padding:.65rem .55rem; } .teacher-chapter-admin-row>div { gap:.45rem; } .teacher-chapter-admin-row strong { font-size:.72rem; } .teacher-chapter-admin-row button { padding:.3rem .35rem; font-size:.68rem; } }
+  @media(max-width:520px) { :global(.teacher-chapter-admin-row) { grid-template-columns:minmax(0,1fr); gap:.6rem; padding:.7rem; } :global(.teacher-chapter-admin-copy) { grid-template-columns:1.8rem minmax(0,1fr); gap:.55rem; } :global(.teacher-chapter-admin-row strong) { font-size:.78rem; } :global(.teacher-chapter-admin-actions) { justify-content:flex-end; } :global(.teacher-chapter-admin-row button) { min-height:34px; padding:.3rem .6rem; font-size:.7rem; } }
   @media(max-width:700px) { .teacher-guide-manager-head { align-items:stretch; flex-direction:column; } }
   .bulk-panel { border:1px solid #e5e0d8; border-radius:22px; padding:1.25rem; background:color-mix(in srgb,var(--color-accent-light) 3%,white); }
   :global(.dark) .bulk-panel { border-color:#2a2a2e; background:color-mix(in srgb,var(--color-accent-light) 6%,#1e1e22); }
@@ -180,7 +187,7 @@ const { data: { user } } = await supabase.auth.getUser();
       event.preventDefault(); activateTab(tabs[nextIndex], true);
     });
   });
-  const disciplines: Row[] = []; const modules: Row[] = []; const lessons: Row[] = []; const students: Row[] = []; const teacherGuides: Row[] = []; const teacherGuideChapters: Row[] = []; let selectedTeacherGuideId = ''; let availableDisciplines: Row[] = []; let studentFilter = 'all'; let disciplineSearch = ''; let moduleSearch = ''; let moduleDisciplineFilter = 'all'; let lessonSearch = ''; let lessonDisciplineFilter = 'all'; let lessonModuleFilter = 'all'; let lessonStatusFilter = 'all'; let studentSearch = ''; let editingStudent: Row | null = null; const selectedStudentIds = new Set<string>(); const selectedLessonIds = new Set<string>();
+  const disciplines: Row[] = []; const modules: Row[] = []; const lessons: Row[] = []; const students: Row[] = []; const teacherGuides: Row[] = []; const teacherGuideChapters: Row[] = []; let selectedTeacherGuideId = ''; let selectedTeacherChapterId = 'all'; let availableDisciplines: Row[] = []; let studentFilter = 'all'; let disciplineSearch = ''; let moduleSearch = ''; let moduleDisciplineFilter = 'all'; let lessonSearch = ''; let lessonDisciplineFilter = 'all'; let lessonModuleFilter = 'all'; let lessonStatusFilter = 'all'; let studentSearch = ''; let editingStudent: Row | null = null; const selectedStudentIds = new Set<string>(); const selectedLessonIds = new Set<string>();
   const slugify = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   async function api(path: string, method = 'GET', body?: unknown) {
     const response = await fetch(path, { method, headers: body ? { 'content-type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined });
@@ -195,33 +202,43 @@ const { data: { user } } = await supabase.auth.getUser();
   function renderTeacherGuidePanel() {
     const disciplineFilter = $('#teacher-guide-discipline-filter') as HTMLSelectElement;
     const moduleFilter = $('#teacher-guide-module-filter') as HTMLSelectElement;
-    const guideSelect = $('#teacher-guide-select') as HTMLSelectElement;
+    const chapterSelect = $('#teacher-chapter-select') as HTMLSelectElement;
     fillSelect(disciplineFilter, disciplines, (row) => row.name, (row) => row.slug, 'Todas as disciplinas');
     if (disciplineFilter.options[0]) disciplineFilter.options[0].value = 'all';
-    const filteredModules = modules.filter((row) => disciplineFilter.value === 'all' || row.discipline_slug === disciplineFilter.value);
+    const filteredModules = modules.filter((row) => teacherGuides.some((guide) => guide.module_id === row.id) && (disciplineFilter.value === 'all' || row.discipline_slug === disciplineFilter.value));
     fillSelect(moduleFilter, filteredModules, (row) => `${disciplines.find((d) => d.slug === row.discipline_slug)?.name ?? ''} · ${row.name}`, (row) => row.id, 'Todos os módulos');
     if (moduleFilter.options[0]) moduleFilter.options[0].value = 'all';
     const filteredGuides = teacherGuides.filter((guide) => (disciplineFilter.value === 'all' || guide.discipline_slug === disciplineFilter.value) && (moduleFilter.value === 'all' || guide.module_id === moduleFilter.value));
-    fillSelect(guideSelect, filteredGuides, (guide) => `${disciplines.find((d) => d.slug === guide.discipline_slug)?.name ?? guide.discipline_slug} · ${guide.source_filename ? `Guia do professor — ${guide.source_filename}` : guide.title}`, (guide) => guide.id, 'Selecione um guia');
-    guideSelect.value = filteredGuides.some((guide) => guide.id === selectedTeacherGuideId) ? selectedTeacherGuideId : filteredGuides[0]?.id ?? '';
-    selectedTeacherGuideId = guideSelect.value;
-    const guide = teacherGuides.find((item) => item.id === selectedTeacherGuideId);
+    const currentGuide = filteredGuides.find((guide) => guide.id === selectedTeacherGuideId);
+    const guide = currentGuide ?? filteredGuides.find((item) => item.module_id === moduleFilter.value) ?? filteredGuides[0];
+    if (guide && moduleFilter.value !== guide.module_id) moduleFilter.value = guide.module_id;
+    selectedTeacherGuideId = guide?.id ?? '';
+    const chapters = guide ? teacherGuideChapters.filter((chapter) => chapter.guide_id === guide.id).sort((a, b) => a.chapter_order - b.chapter_order) : [];
+    fillSelect(chapterSelect, chapters, (chapter) => `${String(chapter.chapter_order).padStart(2, '0')} · ${chapter.title}`, (chapter) => chapter.id, 'Todos os capítulos');
+    if (chapterSelect.options[0]) chapterSelect.options[0].value = 'all';
+    if (!chapters.some((chapter) => chapter.id === selectedTeacherChapterId)) selectedTeacherChapterId = 'all';
+    chapterSelect.value = selectedTeacherChapterId;
     const manager = $('#teacher-guide-manager');
     manager.hidden = !guide;
     if (!guide) return;
     $('#teacher-guide-heading').textContent = `${disciplines.find((d) => d.slug === guide.discipline_slug)?.name ?? guide.discipline_slug} · ${guide.title}`;
     $('#teacher-guide-file').textContent = guide.source_filename ? `PDF de referência: ${guide.source_filename}` : 'Conteúdo do guia salvo no banco de dados.';
-    const chapters = teacherGuideChapters.filter((chapter) => chapter.guide_id === guide.id).sort((a, b) => a.chapter_order - b.chapter_order);
     $('#teacher-chapter-count').textContent = `${chapters.length} ${chapters.length === 1 ? 'capítulo' : 'capítulos'}`;
     const list = $('#teacher-guide-chapter-list'); list.replaceChildren();
+    const visibleChapters = selectedTeacherChapterId === 'all' ? chapters : chapters.filter((chapter) => chapter.id === selectedTeacherChapterId);
     if (!chapters.length) { const empty = document.createElement('p'); empty.className = 'rounded-xl border border-dashed border-border-light p-4 text-sm text-text-muted-light dark:border-border-dark dark:text-text-muted-dark'; empty.textContent = 'Este guia ainda não tem capítulos. Use “Novo capítulo” para adicionar o primeiro.'; list.append(empty); }
-    chapters.forEach((chapter) => {
-      const row = document.createElement('div'); row.className = 'teacher-chapter-admin-row';
-      const copy = document.createElement('div'); copy.className = 'min-w-0 flex-1';
+    else if (!visibleChapters.length) { const empty = document.createElement('p'); empty.className = 'rounded-xl border border-dashed border-border-light p-4 text-sm text-text-muted-light dark:border-border-dark dark:text-text-muted-dark'; empty.textContent = 'Nenhum capítulo corresponde ao filtro selecionado.'; list.append(empty); }
+    visibleChapters.forEach((chapter) => {
+      const row = document.createElement('article'); row.className = `teacher-chapter-admin-row${chapter.id === selectedTeacherChapterId ? ' is-selected' : ''}`;
+      const copy = document.createElement('div'); copy.className = 'teacher-chapter-admin-copy';
       const order = document.createElement('span'); order.className = 'teacher-chapter-admin-order'; order.textContent = String(chapter.chapter_order).padStart(2, '0');
       const title = document.createElement('strong'); title.textContent = chapter.title;
       copy.append(order, title);
-      row.append(copy, actionButton('Editar', () => editTeacherGuideChapter(chapter)), actionButton('Excluir', async () => { if (!confirm(`Excluir o capítulo “${chapter.title}”?`)) return; try { await api('/api/admin/teacher-guide-chapters', 'DELETE', { id: chapter.id }); await loadTeacherGuideData(); } catch (error) { setStatus('#teacher-guide-status', error instanceof Error ? error.message : 'Não foi possível excluir o capítulo.', true); } }, true));
+      const actions = document.createElement('div'); actions.className = 'teacher-chapter-admin-actions';
+      const editButton = actionButton('Editar', () => editTeacherGuideChapter(chapter)); editButton.className = 'teacher-chapter-edit';
+      const deleteButton = actionButton('Excluir', async () => { if (!confirm(`Excluir o capítulo “${chapter.title}”?`)) return; try { await api('/api/admin/teacher-guide-chapters', 'DELETE', { id: chapter.id }); if (selectedTeacherChapterId === chapter.id) selectedTeacherChapterId = 'all'; await loadTeacherGuideData(); } catch (error) { setStatus('#teacher-guide-status', error instanceof Error ? error.message : 'Não foi possível excluir o capítulo.', true); } }, true); deleteButton.className = 'teacher-chapter-delete';
+      actions.append(editButton, deleteButton);
+      row.append(copy, actions);
       list.append(row);
     });
   }
@@ -297,9 +314,9 @@ const { data: { user } } = await supabase.auth.getUser();
   $('#teacher-guide-edit').addEventListener('click', () => { const guide = teacherGuides.find((item) => item.id === selectedTeacherGuideId); if (!guide) return; const form = $('#teacher-guide-form') as HTMLFormElement; form.reset(); (form.elements.namedItem('id') as HTMLInputElement).value = guide.id; (form.elements.namedItem('discipline_slug') as HTMLSelectElement).value = guide.discipline_slug; updateTeacherModuleOptions(); (form.elements.namedItem('module_id') as HTMLSelectElement).value = guide.module_id; (form.elements.namedItem('title') as HTMLInputElement).value = guide.title; (form.elements.namedItem('pdf') as HTMLInputElement).required = false; $('#teacher-guide-form-status').textContent = 'O PDF é opcional. Os capítulos são cadastrados separadamente no banco.'; $('#teacher-guide-dialog').showModal(); });
   $('#teacher-guide-form [name="discipline_slug"]').addEventListener('change', updateTeacherModuleOptions);
   $('#teacher-guide-form').addEventListener('submit', async (event) => { event.preventDefault(); const form = event.currentTarget as HTMLFormElement; const button = form.querySelector<HTMLButtonElement>('button[type="submit"],button:not([type])')!; button.disabled = true; button.textContent = 'Salvando…'; try { const id = String(new FormData(form).get('id') ?? ''); const response = await fetch('/api/admin/teacher-guides', { method: id ? 'PUT' : 'POST', body: new FormData(form) }); const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Não foi possível salvar o guia.'); selectedTeacherGuideId = result.guide.id; $('#teacher-guide-dialog').close(); setStatus('#teacher-guide-status', 'Guia salvo. Agora você pode cadastrar os capítulos.'); await loadTeacherGuideData(); } catch (error) { setStatus('#teacher-guide-form-status', error instanceof Error ? error.message : 'Não foi possível salvar o guia.', true); } finally { button.disabled = false; button.textContent = 'Salvar guia'; } });
-  $('#teacher-guide-discipline-filter').addEventListener('change', () => { const filter = $('#teacher-guide-module-filter') as HTMLSelectElement; filter.value = 'all'; renderTeacherGuidePanel(); });
-  $('#teacher-guide-module-filter').addEventListener('change', renderTeacherGuidePanel);
-  $('#teacher-guide-select').addEventListener('change', (event) => { selectedTeacherGuideId = (event.currentTarget as HTMLSelectElement).value; renderTeacherGuidePanel(); });
+  $('#teacher-guide-discipline-filter').addEventListener('change', () => { selectedTeacherGuideId = ''; selectedTeacherChapterId = 'all'; renderTeacherGuidePanel(); });
+  $('#teacher-guide-module-filter').addEventListener('change', () => { const selectedModuleId = ($('#teacher-guide-module-filter') as HTMLSelectElement).value; selectedTeacherGuideId = teacherGuides.find((guide) => guide.module_id === selectedModuleId)?.id ?? ''; selectedTeacherChapterId = 'all'; renderTeacherGuidePanel(); });
+  $('#teacher-chapter-select').addEventListener('change', (event) => { selectedTeacherChapterId = (event.currentTarget as HTMLSelectElement).value || 'all'; renderTeacherGuidePanel(); });
   $('#teacher-guide-delete').addEventListener('click', async () => { const guide = teacherGuides.find((item) => item.id === selectedTeacherGuideId); if (!guide || !confirm(`Excluir o guia “${guide.title}” e todos os seus capítulos?`)) return; try { await api('/api/admin/teacher-guides', 'DELETE', { id: guide.id }); selectedTeacherGuideId = ''; await loadTeacherGuideData(); setStatus('#teacher-guide-status', 'Guia e capítulos excluídos.'); } catch (error) { setStatus('#teacher-guide-status', error instanceof Error ? error.message : 'Não foi possível excluir o guia.', true); } });
   $('#teacher-chapter-new').addEventListener('click', () => { const guide = teacherGuides.find((item) => item.id === selectedTeacherGuideId); if (!guide) return; const form = $('#teacher-chapter-form') as HTMLFormElement; form.reset(); (form.elements.namedItem('id') as HTMLInputElement).value = ''; const chapters = teacherGuideChapters.filter((chapter) => chapter.guide_id === guide.id); const nextOrder = Math.max(0, ...chapters.map((chapter) => Number(chapter.chapter_order) || 0)) + 1; (form.elements.namedItem('chapter_order') as HTMLInputElement).value = String(nextOrder); $('#teacher-chapter-status').textContent = ''; $('#teacher-chapter-dialog').showModal(); });
   $('#teacher-chapter-form').addEventListener('submit', async (event) => { event.preventDefault(); const form = event.currentTarget as HTMLFormElement; const raw = Object.fromEntries(new FormData(form).entries()); const guide = teacherGuides.find((item) => item.id === selectedTeacherGuideId); if (!guide) return; const payload = { ...raw, guide_id: guide.id, chapter_order: Number(raw.chapter_order) }; const button = form.querySelector<HTMLButtonElement>('button[type="submit"],button:not([type])')!; button.disabled = true; button.textContent = 'Salvando…'; try { await api('/api/admin/teacher-guide-chapters', raw.id ? 'PUT' : 'POST', payload); $('#teacher-chapter-dialog').close(); await loadTeacherGuideData(); setStatus('#teacher-guide-status', 'Capítulo salvo e disponível no leitor do professor.'); } catch (error) { setStatus('#teacher-chapter-status', error instanceof Error ? error.message : 'Não foi possível salvar o capítulo.', true); } finally { button.disabled = false; button.textContent = 'Salvar capítulo'; } });
