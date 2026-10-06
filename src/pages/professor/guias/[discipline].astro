@@ -32,10 +32,16 @@ const activeChapterIndex = selectedGuide?.chapters.findIndex((chapter) => chapte
 const previousChapter = activeChapterIndex > 0 ? selectedGuide?.chapters[activeChapterIndex - 1] : null;
 const nextChapter = selectedGuide && activeChapterIndex >= 0 ? selectedGuide.chapters[activeChapterIndex + 1] ?? null : null;
 const rawMarkdown = activeChapter?.content_markdown ?? '';
+const benchHeading = /^\s*#{0,6}\s*(?:\d+\.\s*)?(?:Passo a Passo da Demonstração do Professor|Projeto da Demonstração)\b.*$/im.exec(rawMarkdown);
 const practiceHeading = /^\s*#{0,6}\s*Aula\s+\d+\s*:\s*Prática dos Alunos\b.*$/im.exec(rawMarkdown);
-const theoryMarkdown = practiceHeading ? rawMarkdown.slice(0, practiceHeading.index).trim() : rawMarkdown;
+const splitAt = (benchHeading?.index ?? Infinity) < (practiceHeading?.index ?? Infinity) ? benchHeading!.index : practiceHeading?.index ?? Infinity;
+const theoryMarkdown = Number.isFinite(splitAt) ? rawMarkdown.slice(0, splitAt).trim() : rawMarkdown;
+const benchMarkdown = benchHeading
+  ? rawMarkdown.slice(benchHeading.index, practiceHeading && practiceHeading.index > benchHeading.index ? practiceHeading.index : undefined).trim()
+  : '';
 const practiceMarkdown = practiceHeading ? rawMarkdown.slice(practiceHeading.index).trim() : '';
 const theoryHtml = theoryMarkdown ? sanitizeHtml(await marked.parse(theoryMarkdown)) : '';
+const benchHtml = benchMarkdown ? sanitizeHtml(await marked.parse(benchMarkdown)) : '';
 const practiceHtml = practiceMarkdown ? sanitizeHtml(await marked.parse(practiceMarkdown)) : '';
 const loadError = Boolean(disciplineResult.error || guideResult.error || chapterResult.error || moduleResult.error);
 const chapterHref = (guideId: string, chapterSlug: string) => `/professor/guias/${encodeURIComponent(disciplineSlug)}?guia=${encodeURIComponent(guideId)}&capitulo=${encodeURIComponent(chapterSlug)}`;
@@ -78,13 +84,17 @@ const chapterHref = (guideId: string, chapterSlug: string) => `/professor/guias/
         <div class="teacher-chapter-meta"><span>{selectedGuide.title}</span><span>Guia privado de planejamento</span></div>
         <div class="teacher-content-tabs" role="tablist" aria-label={`Conteúdo de ${activeChapter.title}`}>
           <button type="button" id="teacher-theory-tab" role="tab" aria-selected="true" aria-controls="teacher-theory-panel">Teoria</button>
-          <button type="button" id="teacher-practice-tab" role="tab" aria-selected="false" aria-controls="teacher-practice-panel">Guia de bancada</button>
+          <button type="button" id="teacher-bench-tab" role="tab" aria-selected="false" aria-controls="teacher-bench-panel">Guia de bancada</button>
+          <button type="button" id="teacher-practice-tab" role="tab" aria-selected="false" aria-controls="teacher-practice-panel">Prática do aluno</button>
         </div>
         <section id="teacher-theory-panel" role="tabpanel" aria-labelledby="teacher-theory-tab" class="teacher-tab-panel">
           <div class="teacher-content prose prose-base mt-8 max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-accent-light prose-blockquote:border-l-highlight-light prose-blockquote:bg-highlight-light/10 prose-blockquote:px-4 prose-blockquote:py-1 dark:prose-invert" set:html={theoryHtml}></div>
         </section>
+        <section id="teacher-bench-panel" role="tabpanel" aria-labelledby="teacher-bench-tab" class="teacher-tab-panel" hidden>
+          {benchHtml ? <><p class="teacher-practice-label">Seu passo a passo</p><div class="teacher-content prose prose-base mt-5 max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-accent-light prose-blockquote:border-l-highlight-light prose-blockquote:bg-highlight-light/10 prose-blockquote:px-4 prose-blockquote:py-1 dark:prose-invert" set:html={benchHtml}></div></> : <p class="teacher-practice-empty">O passo a passo do professor ainda não foi cadastrado neste capítulo.</p>}
+        </section>
         <section id="teacher-practice-panel" role="tabpanel" aria-labelledby="teacher-practice-tab" class="teacher-tab-panel" hidden>
-          {practiceHtml ? <><p class="teacher-practice-label">Guia de bancada</p><div class="teacher-content prose prose-base mt-5 max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-accent-light prose-blockquote:border-l-highlight-light prose-blockquote:bg-highlight-light/10 prose-blockquote:px-4 prose-blockquote:py-1 dark:prose-invert" set:html={practiceHtml}></div></> : <p class="teacher-practice-empty">O guia de bancada deste capítulo ainda não foi cadastrado.</p>}
+          {practiceHtml ? <><p class="teacher-practice-label">Atividade para a turma</p><div class="teacher-content prose prose-base mt-5 max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-accent-light prose-blockquote:border-l-highlight-light prose-blockquote:bg-highlight-light/10 prose-blockquote:px-4 prose-blockquote:py-1 dark:prose-invert" set:html={practiceHtml}></div></> : <p class="teacher-practice-empty">A prática do aluno ainda não foi cadastrada neste capítulo.</p>}
         </section>
         <nav class="teacher-chapter-pagination" aria-label="Navegação entre capítulos">
           {previousChapter ? <a class="teacher-previous" href={chapterHref(selectedGuide.id, previousChapter.slug)}><span aria-hidden="true">←</span><span><small>Capítulo anterior</small><strong>{previousChapter.title}</strong></span></a> : <span></span>}
@@ -201,7 +211,7 @@ const chapterHref = (guideId: string, chapterSlug: string) => `/professor/guias/
   .chapter-title { margin-top:8px; font-family:'Orbitron',sans-serif; font-size:clamp(24px,4vw,42px); font-weight:700; line-height:1.2; }
   .teacher-chapter-meta { display:flex; flex-wrap:wrap; gap:10px 18px; margin-top:18px; color:var(--color-text-muted-light); font-size:10px; text-transform:uppercase; letter-spacing:.08em; }
   .teacher-chapter-meta span+span { border-left:1px solid var(--color-border-light); padding-left:18px; }
-  .teacher-content-tabs { display:flex; gap:24px; margin-top:34px; border-bottom:1px solid var(--color-border-light); }
+  .teacher-content-tabs { display:flex; flex-wrap:wrap; gap:20px; margin-top:34px; border-bottom:1px solid var(--color-border-light); }
   .teacher-content-tabs [role="tab"] { border-bottom:2px solid transparent; padding:11px 3px; color:var(--color-text-muted-light); font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
   .teacher-content-tabs [role="tab"][aria-selected="true"] { border-color:var(--color-accent-light); color:var(--color-accent-light); }
   .teacher-practice-label { margin-top:24px; color:var(--color-accent-light); font-size:10px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; }
