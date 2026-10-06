@@ -98,6 +98,19 @@ const yearGroups = [
   .year-nav-group[open] .year-nav-chevron { transform:rotate(180deg); }
   .year-nav-menu { animation:year-menu-in .14s ease-out; }
   @keyframes year-menu-in { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+  @media (min-width:721px) and (max-width:1023px) {
+    .header-main { gap:8px; padding-inline:14px; }
+    .brand-link { gap:7px; }
+    .brand-link>span:first-child { width:36px; height:36px; }
+    .brand-name { font-size:12px; }
+    .header-tools form[action="/buscar"] { width:clamp(160px,24vw,230px); }
+    .header-tools .profile-menu>summary { max-width:104px; }
+    .header-tools .profile-menu>summary>span:last-child { max-width:78px; font-size:12px; }
+  }
+  @media (min-width:721px) and (max-width:820px) {
+    .header-tools form[action="/buscar"] { display:none; }
+    .header-tools .search-shortcut { display:inline-flex; align-items:center; justify-content:center; }
+  }
   @media (max-width:640px) { .header-main { gap:8px; padding-inline:10px; } .header-tools { gap:2px; } .brand-name { font-size:12px; } }
   @media (max-width:360px) { .brand-name { display:none; } }
   @media (min-width:1024px) { .mobile-year-nav { display:none; } }
