@@ -1,3 +1,4 @@
+---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { createSupabaseServerClient } from '../../../lib/supabase';
 import { marked } from 'marked';
@@ -6,13 +7,18 @@ import sanitizeHtml from 'sanitize-html';
 export const prerender = false;
 
 const supabase = createSupabaseServerClient(Astro.cookies, Astro.request);
-const [{ data: auth }, { data: guideRows, error: guideError }, { data: chapterRows, error: chapterError }, { data: disciplineRows }, { data: moduleRows }] = await Promise.all([
+const [authResult, guideResult, chapterResult, disciplineResult, moduleResult] = await Promise.all([
   supabase.auth.getUser(),
   supabase.from('teacher_guides').select('id,discipline_slug,module_id,title,source_filename,storage_path,page_count,created_at,updated_at').order('created_at'),
   supabase.from('teacher_guide_chapters').select('id,guide_id,slug,title,chapter_order,content_markdown,created_at,updated_at').order('chapter_order'),
   supabase.from('disciplines').select('slug,name').order('sort_order'),
   supabase.from('modules').select('id,name,discipline_slug,sort_order').order('sort_order'),
 ]);
+const { data: auth } = authResult;
+const { data: guideRows, error: guideError } = guideResult;
+const { data: chapterRows, error: chapterError } = chapterResult;
+const { data: disciplineRows } = disciplineResult;
+const { data: moduleRows } = moduleResult;
 
 const user = auth?.user ?? null;
 const disciplines = disciplineRows ?? [];
