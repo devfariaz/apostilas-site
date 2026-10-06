@@ -13,7 +13,9 @@ from guide_source s join public.modules m on m.discipline_slug=s.discipline_slug
 on conflict (discipline_slug,module_id) do update set title=excluded.title,source_filename=excluded.source_filename,storage_path=excluded.storage_path,page_count=excluded.page_count,updated_at=timezone('utc'::text,now());
 
 with chapter_source(discipline_slug,module_slug,slug,title,chapter_order,content_markdown) as (values
-('producao-multimidia-ii','modulo-1','semana-1','Semana 1: O Quebra-Cabeça Digital e o Ambiente do Photoshop',1,'## Semana 1: O Quebra-Cabeça Digital e o Ambiente do Photoshop Conteúdos integrados: O que é um Asset Visual, Pipeline de Produção, Nomenclatura e Configuração do Photoshop.
+('producao-multimidia-ii','modulo-1','semana-1','Semana 1: O Quebra-Cabeça Digital e o Ambiente do Photoshop',1,'## Semana 1: O Quebra-Cabeça Digital e o Ambiente do Photoshop
+
+**Conteúdos integrados:** O que é um Asset Visual, Pipeline de Produção, Nomenclatura e Configuração do Photoshop.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -98,7 +100,9 @@ profissional correta: prop_item_moeda_ouro.png. Mostre aos alunos como o arquivo
 **Missão do aluno:** Setup do Game Artist e O Primeiro Asset Pack
 
 Hoje você assume oficialmente a cadeira de artista técnico de um estúdio. Sua missão é configurar o seu ambiente de trabalho no Photoshop e produzir seus três primeiros assets decorativos com nomenclatura profissional e fundo transparente. Checklist do Desafio: Criar uma pasta no computador chamada PRMU2_SeuNome e uma subpasta chamada Assets_S1. Abrir o Photoshop e criar um novo Canvas de 1920 x 1080 pixels, resolução de 72 DPI e fundo transparente. Ativar as réguas com o atalho Ctrl + R e puxar duas guias para marcar o centro do palco. Criar 3 camadas separadas no painel de camadas para cada um dos seguintes itens: Camada 1 Uma poção de vida (formato simples de frasco). Camada 2 Uma moeda de ouro ou gema mágica. Camada 3 Uma chave de masmorra. Pintar cada item em sua respectiva camada usando o Pincel Duro (B ). Exportar cada elemento separadamente como arquivo.PNG com canal alpha (fundo transparente). Respeitar rigorosamente a nomenclatura padrão da indústria: prop_pocao_vida.png prop_moeda_ouro.png prop_chave_ferro.png'),
-('producao-multimidia-ii','modulo-1','semana-2','Semana 2: O Repertório Visual e a Bússola do Moodboard',2,'## Semana 2: O Repertório Visual e a Bússola do Moodboard Conteúdos integrados: Classificação de Assets UI, Props, Sprites, Tilesets) e Construção de Moodboard com a Regra do Frankenstein.
+('producao-multimidia-ii','modulo-1','semana-2','Semana 2: O Repertório Visual e a Bússola do Moodboard',2,'## Semana 2: O Repertório Visual e a Bússola do Moodboard
+
+**Conteúdos integrados:** Classificação de Assets UI, Props, Sprites, Tilesets) e Construção de Moodboard com a Regra do Frankenstein.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -181,7 +185,9 @@ painel (ex: Rosa Choque, Ciano Neon, Cinza Asfalto, Amarelo Alerta e Preto Profu
 ### Aula 2: Prática dos Alunos (45 min)
 
 **Missão do aluno:** A Bússola Visual do Projeto Você e seu time receberam o briefing de um jogo inédito. Sua missão é garimpar referências de qualidade e construir o Moodboard oficial de Direção de Arte do universo do seu jogo, estabelecendo o clima, os materiais do mundo e a paleta cromática inicial. Checklist do Desafio: Definir o tema do seu projeto Exemplos: Masmorra Medieval Amaldiçoada, Estação Espacial Abandonada ou Vila Flutuante Steampunk). Garimpar e salvar em uma pasta local de 8 a 12 imagens de referência no Pinterest, ArtStation ou Behance. Atenção: incluir pelo menos 2 fotos do mundo real para materiais/texturas). Criar um documento no Photoshop no tamanho 1920 x 1080 pixels a 72 DPI. Importar todas as imagens utilizando o comando Arquivo > Colocar Incorporado.... Organizar as fotos no Canvas usando Ctrl + T Transformação Livre) e a ferramenta Mover (V ), mantendo a tela diagramada sem sobreposições confusas. Criar uma faixa com 5 quadrados na base ou lateral utilizando a Ferramenta Retângulo (U ). Coletar 5 cores fundamentais das próprias fotos com o Conta-Gotas (I ), formando a paleta de cores oficial do jogo. Salvar o arquivo mestre como Moodboard_Tema_SeuNome.psd e exportar uma versão em.JPG para apresentação rápida.'),
-('producao-multimidia-ii','modulo-1','semana-3','Semana 3: A Psicologia das Formas (Shape Language)',3,'## Semana 3: A Psicologia das Formas (Shape Language) Conteúdos integrados: Shape Language aplicada a arquétipos, Biologia da Visão e Silhuetas Primitivas.
+('producao-multimidia-ii','modulo-1','semana-3','Semana 3: A Psicologia das Formas (Shape Language)',3,'## Semana 3: A Psicologia das Formas (Shape Language)
+
+**Conteúdos integrados:** Shape Language aplicada a arquétipos, Biologia da Visão e Silhuetas Primitivas.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -260,7 +266,9 @@ qualquer estudante sabe apontar com clareza quem é o protetor, quem
 ### Aula 2: Prática dos Alunos (45 min)
 
 **Missão do aluno:** A Tríade da Geometria Visual Sua tarefa é colocar a psicologia evolutiva à prova. Você criará três silhuetas originais de corpo inteiro em preto sólido, provando que a identidade do personagem nasce na geometria das formas primitivas antes de receber detalhes cosméticos. Checklist do Desafio: Criar um documento novo no Photoshop: 1920 x 1080 px, 72 DPI, fundo Branco. Dividir mentalmente o palco em três áreas e criar uma camada chamada 01_Silhuetas_Primitivas. Construir o Personagem A O Tanque/Guardião): Deve ser desenhado com 80% de predominância de quadrados e retângulos (ombros em bloco, mandíbula quadrada, postura rígida). Construir o Personagem B O Companheiro/Suporte): Deve ser desenhado com 80% de predominância de círculos e ovais (barriga esférica, postura macia, ausência de pontas). Construir o Personagem C O Vilão/Assassino): Deve ser desenhado com 80% de predominância de triângulos e diagonais (extremidades afiadas, postura tensa e ameaçadora). Aplicar a regra inquebrável: trabalhar com tinta preta sólida (#000000 ), sem linhas internas, sem desenhar olhos, roupas ou armas detalhadas. Executar o "Teste com o Colega": vire o monitor para o colega ao lado; ele deve acertar os arquétipos das três formas em menos de 5 segundos. Salvar o arquivo mestre como ShapeLanguage_Trio_SeuNome.psd.'),
-('producao-multimidia-ii','modulo-1','semana-4','Semana 4: A Engenharia dos Thumbnails e o Teste da Silhueta',4,'## Semana 4: A Engenharia dos Thumbnails e o Teste da Silhueta Conteúdos integrados: Thumbnails de Concept Art, Esculpir na Massa e o Teste Supremo da Silhueta Negra.
+('producao-multimidia-ii','modulo-1','semana-4','Semana 4: A Engenharia dos Thumbnails e o Teste da Silhueta',4,'## Semana 4: A Engenharia dos Thumbnails e o Teste da Silhueta
+
+**Conteúdos integrados:** Thumbnails de Concept Art, Esculpir na Massa e o Teste Supremo da Silhueta Negra.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -337,7 +345,9 @@ demonstrando aos alunos como o contorno externo comunica o perigo da criatura se
 **Missão do aluno:** A Forja de Silhuetas Chegou a sua vez de atuar como artista conceitual de produção. Você deve ignorar os detalhes e explorar variações volumétricas extremas, produzindo
 
 uma folha técnica de thumbnails para um vilão ou criatura de jogo. Checklist do Desafio: Criar um documento no Photoshop: 1920 x 1080 px, 72 DPI, com fundo cinza-claro neutro. Afastar o zoom da tela (trabalhar obrigatoriamente sem aproximação, mantendo o Canvas visualmente pequeno). Escolher um arquétipo para o desafio: O Mercenário Cibernético, O Bruxo da Floresta ou A Criatura das Profundezas. Desenhar na mesma camada pelo menos 6 opções de thumbnails em miniatura, pintando a massa sólida em preto (#000000 ). Utilizar a Borracha (E ) para lapidar as bordas e abrir janelas de espaço negativo (garantir que braços e armas não fiquem colados ao corpo como um bloco maciço). Forçar variações claras em cada um dos 6 desenhos: mudar a postura da linha da coluna, inverter pesos (pernas longas vs. pernas curtas, tronco largo vs. tronco esguio). Eleger o melhor thumbnail entre os seis desenhados e desenhar um círculo vermelho ao redor dele para indicar a escolha da Direção de Arte. Salvar o arquivo mestre como Thumbnails_Criatura_SeuNome.psd.'),
-('producao-multimidia-ii','modulo-1','semana-5','Semana 5: Cor Digital, Sistema HSB e o Color Script',5,'## Semana 5: Cor Digital, Sistema HSB e o Color Script Conteúdos integrados: Harmonia Cromática, Seletor HSB, Identidade Visual e Criação do Color Script Narrativo.
+('producao-multimidia-ii','modulo-1','semana-5','Semana 5: Cor Digital, Sistema HSB e o Color Script',5,'## Semana 5: Cor Digital, Sistema HSB e o Color Script
+
+**Conteúdos integrados:** Harmonia Cromática, Seletor HSB, Identidade Visual e Criação do Color Script Narrativo.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -426,7 +436,9 @@ antes mesmo de adicionarmos qualquer linha ou personagem aos quadros.
 **Missão do aluno:** A Jornada das Cores Você é o artista de atmosfera responsável por mapear o ritmo emocional de um jogo de aventura. Sua tarefa é produzir um Color Script completo de três atos, aplicando o sistema HSB e harmonias cromáticas intencionais para narrar a evolução de uma história. Checklist do Desafio: Criar um documento horizontal no Photoshop: 1920 x 1080 px a 72 DPI. Desenhar 3 retângulos proporcionais alinhados na tela com a Ferramenta Retângulo (U ). Definir o roteiro das 3 etapas da jornada do seu protagonista: Quadro 1 A Zona Segura Ex: O Refúgio na Floresta). Quadro 2 O Momento de Tensão/Dúvida Ex: O Labirinto Subterrâneo). Quadro 3 O Clímax Dramático Ex: A Cratera do Meteoro). Utilizar o Pincel Macio (B ) de grande escala, trabalhando puramente com manchas de cor e luz, sem desenhar detalhes finos. No Quadro 1, utilizar cores análogas luminosas e acolhedoras para transmitir paz e tranquilidade. No Quadro 2, reduzir a saturação no painel HSB para transmitir isolamento, frio ou desolação.
 
 No Quadro 3, aplicar alto contraste de cores complementares ou luzes saturadas contra fundos escuros para estabelecer o perigo. Salvar o projeto mestre como ColorScript_Jornada_SeuNome.psd.'),
-('producao-multimidia-ii','modulo-1','semana-6','Semana 6: A Art Bible (Bíblia de Arte) e a Diagramação Profissional',6,'## Semana 6: A Art Bible (Bíblia de Arte) e a Diagramação Profissional Conteúdos integrados: Estilos Artísticos em Jogos, Coesão Visual, Estrutura da Art Bible e Diagramação no Adobe Illustrator.
+('producao-multimidia-ii','modulo-1','semana-6','Semana 6: A Art Bible (Bíblia de Arte) e a Diagramação Profissional',6,'## Semana 6: A Art Bible (Bíblia de Arte) e a Diagramação Profissional
+
+**Conteúdos integrados:** Estilos Artísticos em Jogos, Coesão Visual, Estrutura da Art Bible e Diagramação no Adobe Illustrator.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -537,7 +549,9 @@ fonte de leitura limpa em corpo 16 pt: Texto Verde: "Utilize vértices arredonda
 **Missão do aluno:** A Constituição Visual do Jogo
 
 Chegou o momento culminante do Módulo 1. Você assumirá a postura de Diretor de Arte do seu projeto e montará a página mestra de regras do seu estúdio (a página oficial de "Do''s and Don''ts" da sua Art Bible), impedindo desvios estéticos no pipeline da equipe. Checklist do Desafio: Abrir o Adobe Illustrator e criar um documento no formato 1920 x 1080 px, modo RGB, resolução 72 PPI. Ativar as réguas (Ctrl + R ) e traçar margens de segurança de 100 px nas quatro bordas do documento. Aplicar a Hierarquia Tipográfica: criar um título estilizado no topo da página definindo a categoria analisada (ex: PERSONAGENS REGRAS DE CONTOUR ou CENÁRIOS TRATAMENTO DE TEXTURA). Desenhar dois quadros simétricos lado a lado no centro do documento com a Ferramenta Retângulo (M ). Inserir a sinalização visual inequívoca: usar Verde para o lado aprovado (Do) e Vermelho para o lado reprovado (Don''t). Posicionar um exemplo visual aprovado no lado verde e um exemplo que contenha erros conceituais no lado vermelho. Escrever um parágrafo técnico objetivo abaixo de cada caixa (em fonte legível, corpo 14 a 16 pt), justificando com termos da disciplina (como Shape Language, saturação, espessura de contorno ou ruído visual) a aprovação e a reprovação dos modelos. Adicionar na base do arquivo uma amostra com as 4 cores hexadecimais permitidas para o universo do jogo. Salvar o arquivo mestre do Illustrator como ArtBible_OnePager_SeuNome.ai e exportar a página final em formato PDF de alta compatibilidade para entrega.'),
-('producao-multimidia-ii','modulo-2','semana-7','Semana 7: A Fundação da Pintura Digital: Sanduíche de Camadas, Flats e Alpha Lock',1,'## Semana 7: A Fundação da Pintura Digital: Sanduíche de Camadas, Flats e Alpha Lock Conteúdos integrados: Pintura Não-Destrutiva, Sanduíche de Camadas, Bloqueio de Cores Flats, Laço Poligonal e Alpha Lock.
+('producao-multimidia-ii','modulo-2','semana-7','Semana 7: A Fundação da Pintura Digital: Sanduíche de Camadas, Flats e Alpha Lock',1,'## Semana 7: A Fundação da Pintura Digital: Sanduíche de Camadas, Flats e Alpha Lock
+
+**Conteúdos integrados:** Pintura Não-Destrutiva, Sanduíche de Camadas, Bloqueio de Cores Flats, Laço Poligonal e Alpha Lock.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -624,7 +638,9 @@ base, impedindo que o aluno suje o fundo ou saia das bordas. Desfaça o teste co
 **Missão do aluno:** A Linha de Montagem dos Flats Hoje você trabalhará como assistente técnico de colorização (Flatter) em um estúdio. Sua tarefa é pegar o traço limpo de dois props e construir a base sólida de cores chapadas sem deixar falhas ou vazamentos. Checklist do Desafio: Abrir o Photoshop e configurar um documento de 1920 x 1080 px a 72 DPI com fundo cinza-neutro.
 
 Desenhar rapidamente (ou importar do material de apoio) o contorno de dois props distintos: um frasco de poção mágica e uma adaga ou machado. Estruturar o Sanduíche de Camadas: camada Lineart no topo em modo Multiplicação e camada Flats vazia posicionada logo abaixo. Proibição total do uso da Varinha Mágica para preenchimento de cor base. Utilizar a ferramenta Laço Poligonal (L ), contornando pelo centro exato da linha preta. Preencher cada material (vidro, líquido, aço, madeira) com cores sólidas usando o Balde de Tinta (G ). Usar o atalho Ctrl + D para desselecionar as áreas após cada cor aplicada. Desligar a camada Lineart temporariamente para verificar se não há "furos" ou áreas brancas transparentes na cor base. Ativar o Alpha Lock Bloquear pixels transparentes) na camada Flats finalizada. Salvar o arquivo de produção como Props_Flats_SeuNome.psd.'),
-('producao-multimidia-ii','modulo-2','semana-8','Semana 8: Iluminação e Volumetria: Modos de Mesclagem e as 4 Zonas de Luz',2,'## Semana 8: Iluminação e Volumetria: Modos de Mesclagem e as 4 Zonas de Luz Conteúdos integrados: Modos de Mesclagem Multiply, Screen, Linear Dodge), Zonas de Iluminação, Luz Rebatida e Clipping Mask.
+('producao-multimidia-ii','modulo-2','semana-8','Semana 8: Iluminação e Volumetria: Modos de Mesclagem e as 4 Zonas de Luz',2,'## Semana 8: Iluminação e Volumetria: Modos de Mesclagem e as 4 Zonas de Luz
+
+**Conteúdos integrados:** Modos de Mesclagem Multiply, Screen, Linear Dodge), Zonas de Iluminação, Luz Rebatida e Clipping Mask.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -729,7 +745,9 @@ da esfera. A ilusão de volume e reflexo de cristal está completa.
 ### Aula 2: Prática dos Alunos (45 min)
 
 **Missão do aluno:** A Forja do Orbe Dimensional Sua missão é dar volume tridimensional a dois objetos geométricos primitivos (uma esfera e um cilindro de poção) aplicando o sistema técnico de 4 zonas de iluminação e modos de mesclagem. Checklist do Desafio: Criar um documento no Photoshop: 1920 x 1080 px a 72 DPI com fundo cinza-neutro. Desenhar a base chapada de um círculo perfeito (orbe de cristal) e de um cilindro (frasco de poção) em camadas separadas. Definir a Bússola de Luz: marcar no canto superior esquerdo uma seta indicando a origem dos raios solares. Criar camadas independentes vinculadas como Máscaras de Recorte (Ctrl + Alt + G ) para luz e sombra. Camada de Sombra: configurada em modo Multiplicação (Multiply) com cor fria (azul ou roxo), sem usar preto puro. Camada de Luz: configurada em modo Divisão (Screen) com cor quente (amarelo ou laranja claro). Aplicar a Luz Rebatida (Bounce Light) na base da sombra, utilizando um tom que simule o reflexo do piso. Finalizar o ponto de impacto com o Pincel Duro em modo Linear Dodge para simular o reflexo especular. Salvar o arquivo de estudo como Volumetria_Zonas_SeuNome.psd.'),
-('producao-multimidia-ii','modulo-2','semana-9','Semana 9: Materiais Duros: Aço Polido vs. Madeira e Renderização de Props',3,'## Semana 9: Materiais Duros: Aço Polido vs. Madeira e Renderização de Props Conteúdos integrados: Comportamento de Superfícies Difuso vs. Especular), Render de Metal e Madeira, Edge Highlights e Oclusão Ambiental.
+('producao-multimidia-ii','modulo-2','semana-9','Semana 9: Materiais Duros: Aço Polido vs. Madeira e Renderização de Props',3,'## Semana 9: Materiais Duros: Aço Polido vs. Madeira e Renderização de Props
+
+**Conteúdos integrados:** Comportamento de Superfícies Difuso vs. Especular), Render de Metal e Madeira, Edge Highlights e Oclusão Ambiental.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -822,7 +840,9 @@ guarda de madeira. As peças parecem fisicamente unidas e com peso realista.
 ### Aula 2: Prática dos Alunos (45 min)
 
 **Missão do aluno:** A Oficina do Ferreiro Digital Você deve aplicar a física das superfícies e finalizar o render completo de um prop que combine metal e madeira (uma espada de duas mãos, um machado de batalha ou um escudo reforçado com cravos). Checklist do Desafio: Abrir o documento com as camadas de contorno e Flats organizadas da semana anterior. Para a Lâmina/Metal: Dividir a lâmina usando o Laço Poligonal (L ) para separar as faces de corte. Utilizar o Pincel Duro com cor fria em Multiply para criar as áreas de sombra. Aplicar reflexo especular com o Pincel Duro e branco puro em Linear Dodge, criando alto contraste ao lado da sombra. Traçar os Edge Highlights (linhas brancas finas de 1 a 2 px) no fio de corte das bordas. Para o Cabo/Escudo de Madeira: Utilizar transições suaves e pincéis macios para o volume base cilíndrico/arredondado. Não utilizar branco puro para brilhos na madeira (usar tons de amarelo ou bege em modo Screen). Desenhar ranhuras e veios da madeira emparelhando linhas escuras com linhas claras na borda inferior para dar relevo. Pintar a Oclusão Ambiental com sombra densa em Multiply no ponto de contato físico entre o metal e a madeira. Salvar o arquivo de entrega como Prop_Render_AcoMadeira_SeuNome.psd.'),
-('producao-multimidia-ii','modulo-2','semana-10','Semana 10: Materiais Orgânicos, Texturização e Weathering (Ação do Tempo)',4,'## Semana 10: Materiais Orgânicos, Texturização e Weathering (Ação do Tempo) Conteúdos integrados: Pincéis Texturizados, Materiais Difusos Couro e Tecido), Weathering Desgaste/Ação do Tempo) e Controle de Ruído Visual.
+('producao-multimidia-ii','modulo-2','semana-10','Semana 10: Materiais Orgânicos, Texturização e Weathering (Ação do Tempo)',4,'## Semana 10: Materiais Orgânicos, Texturização e Weathering (Ação do Tempo)
+
+**Conteúdos integrados:** Pincéis Texturizados, Materiais Difusos Couro e Tecido), Weathering Desgaste/Ação do Tempo) e Controle de Ruído Visual.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -909,7 +929,9 @@ para preservar a legibilidade e evitar o ruído visual.
 **Missão do aluno:** A Forja do Veterano de Guerra Você deve transformar um prop limpo e novo em um artefato que sobreviveu a dezenas de combates, aplicando texturas de materiais porosos e marcas de desgaste narrativo intencional. Checklist do Desafio: Abrir o prop finalizado da semana anterior ou iniciar a pintura de um novo item que contenha couro ou tecido (ex: tomo mágico, bainha de espada ou escudo). Abrir a janela de pincéis (F5 ) e selecionar pincéis texturizados de mídia seca, giz ou esponja. Pintar a porosidade do couro ou tecido utilizando pincéis granulados em modo Multiply, evitando transições perfeitamente limpas.
 
 Adicionar áreas de desbotamento nas bordas e dobras do material usando tons claros com textura. Criar pelo menos 2 arranhões profundos no metal ou na madeira, aplicando a regra de emparelhamento: linha fina de sombra + linha fina de luz na borda inferior. Aplicar sujeira, lodo ou ferrugem em áreas de Oclusão Ambiental (cantos, fendas e parafusos). Aplicar Edge Wear (marcas de pancada e descascamento) nas bordas externas do prop. Avaliar o Ruído Visual: certificar-se de que pelo menos 60% da superfície do objeto permaneceu limpa para não prejudicar a leitura durante o jogo. Salvar o arquivo de produção como Prop_Weathering_SeuNome.psd.'),
-('producao-multimidia-ii','modulo-2','semana-11','Semana 11: O Segredo dos Mundos Infinitos: Texturas Seamless e o Filtro Offset',5,'## Semana 11: O Segredo dos Mundos Infinitos: Texturas Seamless e o Filtro Offset Conteúdos integrados: Otimização de Memória, Texturas Contínuas Seamless), A Regra da Potência de 2, Efeito Grid e Filtro Deslocamento Offset.
+('producao-multimidia-ii','modulo-2','semana-11','Semana 11: O Segredo dos Mundos Infinitos: Texturas Seamless e o Filtro Offset',5,'## Semana 11: O Segredo dos Mundos Infinitos: Texturas Seamless e o Filtro Offset
+
+**Conteúdos integrados:** Otimização de Memória, Texturas Contínuas Seamless), A Regra da Potência de 2, Efeito Grid e Filtro Deslocamento Offset.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -998,7 +1020,9 @@ sem nenhuma linha divisória ou emenda visível.
 ### Aula 2: Prática dos Alunos (45 min)
 
 **Missão do aluno:** O Tecelão de Superfícies Infinitas Você assumirá o posto de Environment Artist Artista de Cenário). Sua missão técnica é forjar um bloco de textura contínua de solo natural (terra batida, areia ou cascalho) de 512 512 pixels e provar que ele se repete sem costuras. Checklist do Desafio: Criar um documento quadrado no Photoshop de exatos 512 x 512 pixels a 72 DPI (respeitando a Potência de 2. Pintar a camada base com a cor dominante do solo e adicionar variações com pincéis texturizados. Achatar a imagem com o atalho Ctrl + E para garantir uma camada única. Acessar Filtro > Outros > Deslocamento... e configurar os eixos Horizontal e Vertical para +256 px com a opção Dar a Volta ativada. Localizar a cicatriz em forma de cruz no centro do monitor. Utilizar o Carimbo (S ) e pincéis de textura para misturar e eliminar a emenda central. Cumprir a regra de segurança: não encostar o pincel nas margens externas da tela durante a correção. Criar o padrão técnico acessando Editar > Definir Padrão. Criar uma tela grande de teste de 2048 x 2048 pixels e preencher com o padrão via Editar > Preencher. Inspecionar a tela grande: garantir que não há repetições geométricas evidentes Efeito Grid). Salvar o bloco original como Textura_Solo_Seamless_SeuNome.psd.'),
-('producao-multimidia-ii','modulo-2','semana-12','Semana 12: Prática de Texturas: Da Grama Orgânica às Fissuras Áridas (Padrão Voronoi)',6,'## Semana 12: Prática de Texturas: Da Grama Orgânica às Fissuras Áridas (Padrão Voronoi) Conteúdos integrados: Pintura de Grama em Tufos, Padrão Voronoi Chão Rachado e Pedras), Offset de Linhas Duras e Relevo de Pisos.
+('producao-multimidia-ii','modulo-2','semana-12','Semana 12: Prática de Texturas: Da Grama Orgânica às Fissuras Áridas (Padrão Voronoi)',6,'## Semana 12: Prática de Texturas: Da Grama Orgânica às Fissuras Áridas (Padrão Voronoi)
+
+**Conteúdos integrados:** Pintura de Grama em Tufos, Padrão Voronoi Chão Rachado e Pedras), Offset de Linhas Duras e Relevo de Pisos.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -1085,7 +1109,9 @@ quebras visuais.
 ### Aula 2: Prática dos Alunos (45 min)
 
 **Missão do aluno:** O Arquiteto da Topografia Você deve construir uma textura contínua avançada de superfície geométrica ou sólida: ou um chão árido com o Padrão Voronoi de rachaduras, ou uma parede/piso de pedras de calçamento medieval com relevo tridimensional. Checklist do Desafio: Criar o Canvas quadrado padrão de 512 x 512 pixels a 72 DPI no Photoshop. Preencher a cor de fundo representando a matéria-prima base (areia do deserto ou argamassa cinza). Desenhar a malha de fissuras estruturadas usando o Padrão Voronoi (polígonos fechados) com Pincel Duro fino. Achatar a imagem (Ctrl + E ) e executar o filtro Deslocamento em +256 nos dois eixos. Agir como o "encanador digital": reconectar manualmente as pontas das linhas partidas na cruz central. Adicionar camadas de iluminação em modo Screen e aplicar o chanfro de luz (linha clara fina) nas bordas superiores das rochas para criar relevo físico. Registrar o arquivo como padrão contínuo em Editar > Definir Padrão. Validar a textura preenchendo um documento grande de 2048 x 2048 pixels. Confirmar que não há pedras cortadas ao meio ou emendas em cruz visíveis. Salvar o bloco original como Textura_Pedras_Voronoi_SeuNome.psd.'),
-('producao-multimidia-ii','modulo-2','semana-13','Semana 13: Pipeline Técnico de Exportação: Trim, Canal Alpha e Otimização para Engine',7,'## Semana 13: Pipeline Técnico de Exportação: Trim, Canal Alpha e Otimização para Engine Conteúdos integrados: A Ponte Arte-Programação, Canal Alpha, Formato.PNG, Otimização por Trim Aparar, Nomenclatura snake_case e Automação de Assets.
+('producao-multimidia-ii','modulo-2','semana-13','Semana 13: Pipeline Técnico de Exportação: Trim, Canal Alpha e Otimização para Engine',7,'## Semana 13: Pipeline Técnico de Exportação: Trim, Canal Alpha e Otimização para Engine
+
+**Conteúdos integrados:** A Ponte Arte-Programação, Canal Alpha, Formato.PNG, Otimização por Trim Aparar, Nomenclatura snake_case e Automação de Assets.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -1176,7 +1202,9 @@ automaticamente e salvou o PNG recortado lá dentro. Qualquer alteração feita 
 **Missão do aluno:** A Entrega Final do Asset Pack Você é o artista responsável por preparar o pacote final de arte do Módulo 2 para a equipe de desenvolvimento. Sua missão é limpar, isolar, otimizar com o comando Trim e exportar seu pacote com três assets concluídos, prontos para importação em uma engine de jogos. Checklist do Desafio: Abrir os arquivos mestres (.PSD) criados ao longo do Módulo 2. Selecionar 3 assets finalizados para a entrega técnica: Asset 01 Um prop metálico ou arma (ex: espada ou machado). Asset 02 Um prop de poção mágica ou livro de couro. Asset 03 Uma textura contínua (solo de terra ou pedras Voronoi). Garantir que o modo de cor de todos os arquivos está configurado em RGB (Imagem > Modo > Cores RGB ). Ocultar ou apagar as camadas de plano de fundo cinza, ativando a transparência total Canal Alpha) nos dois props. Aplicar o comando Imagem > Aparar (baseado em Pixels Transparentes) nos props para eliminar bordas vazias. Criar no computador a pasta de entrega: Entrega_Modulo2_SeuNome. Exportar os assets como arquivos.PNG limpos. Aplicar rigorosamente a convenção de nomenclatura da indústria (snake_case ): prop_arma_espada_veterano.png prop_pocao_cura_frasco.png tex_chao_pedras_seamless.png
 
 Inspecionar as imagens salvas na pasta: verificar se os props possuem fundo transparente perfeito e se a textura manteve as dimensões exatas de 512 512 pixels.'),
-('producao-multimidia-ii','modulo-3','semana-14','Semana 14: A Arte da Narrativa Visual e o Cenário que Conta Histórias',1,'## Semana 14: A Arte da Narrativa Visual e o Cenário que Conta Histórias Conteúdos integrados: Princípio do "Show, Don''t Tell", Iluminação Narrativa, Storytelling Ambiental, Mise-en-scène e Thumbnail de Cenário com a Regra dos Terços.
+('producao-multimidia-ii','modulo-3','semana-14','Semana 14: A Arte da Narrativa Visual e o Cenário que Conta Histórias',1,'## Semana 14: A Arte da Narrativa Visual e o Cenário que Conta Histórias
+
+**Conteúdos integrados:** Princípio do "Show, Don''t Tell", Iluminação Narrativa, Storytelling Ambiental, Mise-en-scène e Thumbnail de Cenário com a Regra dos Terços.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -1263,7 +1291,9 @@ como ponto focal absoluto e as massas escuras delimitam o perigo.
 **Missão do aluno:** A Cena do Crime Visual Você deve assumir o papel de Artista de Cenário e planejar um ambiente que conte uma história de sobrevivência ou mistério sem recorrer a textos, utilizando composição em tons de cinza, a Regra dos Terços e marcas narrativas de ação. Checklist do Desafio:
 
 Criar um documento no Photoshop no tamanho 1920 x 1080 px a 72 DPI. Desenhar um retângulo de Thumbnail de proporção 16 9 no centro da tela preenchido com cinza-médio. Puxar linhas-guia com Ctrl + R para mapear os quatro pontos de interseção da Regra dos Terços. Escolher um dos seguintes roteiros narrativos: Roteiro A O Posto Médico Abandonado durante um ataque de criaturas. Roteiro B A Forja Medieval saqueada por mercenários. Roteiro C A Cabine de Navegação Espacial onde um tripulante sabotou o sistema. Pintar as grandes massas (paredes, saídas, arquitetura) em preto sólido com o Pincel Duro (B ). Posicionar o ponto focal de maior contraste de luz (branco puro) em uma das interseções da Regra dos Terços. Inserir pelo menos dois indícios claros de Interrupção de Rotina (ex: copos quebrados, ferramentas no chão, móveis virados como barricada). Adicionar Marcas de Ação (arranhões, manchas ou impactos) apontando a direção da fuga ou do perigo. Aplicar o Squint Test: semicerar os olhos a 1 metro da tela e certificar-se de que a leitura de iluminação continua imediata. Salvar o arquivo de estudo como Storytelling_Thumbnail_SeuNome.psd.'),
-('producao-multimidia-ii','modulo-3','semana-15','Semana 15: Setup de Cutscenes, Formato 16:9 e a Arte da Decupagem',2,'## Semana 15: Setup de Cutscenes, Formato 16:9 e a Arte da Decupagem Conteúdos integrados: Proporção Widescreen 16 9, Pranchetas Artboards) no Photoshop, Leitura de Roteiro e Decupagem Técnica Découpage).
+('producao-multimidia-ii','modulo-3','semana-15','Semana 15: Setup de Cutscenes, Formato 16:9 e a Arte da Decupagem',2,'## Semana 15: Setup de Cutscenes, Formato 16:9 e a Arte da Decupagem
+
+**Conteúdos integrados:** Proporção Widescreen 16 9, Pranchetas Artboards) no Photoshop, Leitura de Roteiro e Decupagem Técnica Découpage).
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -1336,7 +1366,9 @@ agora possui ritmo cinematográfico, guiando os olhos do espectador do detalhe p
 **Missão do aluno:** A Decupagem do Roteiro de Jogo Você recebeu o roteiro da introdução de uma fase de combate. Sua missão técnica é configurar um ambiente de trabalho com pranchetas em proporção
 
 cinematográfica 16 9 e decupar o parágrafo dramático em uma sequência lógica de três quadros visuais distintos. Checklist do Desafio: Criar um documento novo no Photoshop marcando obrigatoriamente a opção de Pranchetas Artboards). Configurar cada prancheta na resolução Full HD (1920 x 1080 px a 72 DPI ) em orientação horizontal. Utilizar a ferramenta Prancheta (V ) para estruturar 3 pranchetas alinhadas horizontalmente na tela. Renomear os grupos de camadas respeitando a nomenclatura progressiva (01_Apresentacao, 02_Reacao, 03_Climax ). Ler o roteiro da missão: "O piloto espacial cai com a nave em um planeta tóxico, quebra o vidro do capacete e vê criaturas se aproximando pela neblina". Quadro 1 Foco no Impacto): Decupar com plano de detalhe da cabine destruída ou do alarme piscando. Quadro 2 Foco na Emoção): Decupar com plano fechado no rosto em pânico através da rachadura do visor. Quadro 3 Foco na Ameaça): Decupar com plano médio ou aberto revelando as sombras das criaturas na neblina. Trabalhar com desenhos estruturais em preto e branco com foco em clareza de ação, sem detalhar texturas finas. Salvar o arquivo de produção como Decupagem_Cutscene_SeuNome.psd.'),
-('producao-multimidia-ii','modulo-3','semana-16','Semana 16: Movimento de Câmera, Setas Técnicas e Continuidade Visual',3,'## Semana 16: Movimento de Câmera, Setas Técnicas e Continuidade Visual Conteúdos integrados: Vocabulário de Câmera Pan, Tilt, Zoom In/Out), Código de Cores de Setas, Linhas de Velocidade e Continuidade de Tela.
+('producao-multimidia-ii','modulo-3','semana-16','Semana 16: Movimento de Câmera, Setas Técnicas e Continuidade Visual',3,'## Semana 16: Movimento de Câmera, Setas Técnicas e Continuidade Visual
+
+**Conteúdos integrados:** Vocabulário de Câmera Pan, Tilt, Zoom In/Out), Código de Cores de Setas, Linhas de Velocidade e Continuidade de Tela.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -1405,7 +1437,9 @@ imediatamente o que o ator está fazendo (seta azul) e o que a câmera virtual d
 **Missão do aluno:** A Coreografia de Câmera Você assumirá o posto de Diretor de Câmera da cinemática de um jogo de ação. Sua missão é estruturar um storyboard de três quadros documentando a fuga de um personagem sobre um abismo, aplicando o vocabulário oficial de movimentos de lente e o código de cores técnico de setas. Checklist do Desafio: Abrir um documento no Photoshop contendo 3 Pranchetas em formato 16 9 (1920 x 1080 px a 72 DPI ). Garantir o princípio da Continuidade Visual: o personagem deve manter a mesma direção de progressão de tela (da esquerda para a direita) ao longo de toda a sequência. Quadro 1 A Corrida): Desenhar o personagem correndo inclinado em direção à beirada de uma plataforma. Inserir uma seta Azul ou Verde indicando a trajetória de corrida do personagem. Quadro 2 O Salto no Vazio): Desenhar o personagem em pleno voo com braços e pernas estendidos sobre o abismo. Inserir Linhas de Velocidade (Speed Lines) atrás do tronco para registrar o movimento no ar. Inserir setas Vermelhas nas margens superior e inferior indicando que a câmera executa um Pan para a Direita acompanhando o salto. Quadro 3 O Pouso com Impacto): Desenhar o personagem aterrissando na borda oposta com os joelhos flexionados e marcas de fumaça de impacto. Inserir marcação com caixa vermelha central e setas apontadas para dentro sinalizando um Zoom In dramático no ponto de aterrissagem.
 
 Manter os desenhos focados em manequins de palito articulados e blocos limpos, priorizando a clareza funcional. Salvar o documento como Camera_Direcao_SeuNome.psd.'),
-('producao-multimidia-ii','modulo-3','semana-17','Semana 17: Dinamismo Extremo: A Física do Desequilíbrio, Smear e a Cena de Combate',4,'## Semana 17: Dinamismo Extremo: A Física do Desequilíbrio, Smear e a Cena de Combate Conteúdos integrados: Pushing the Pose, Linhas de Ação e Cinéticas, Efeito Smear Deformação Intencional), Linha Ativa vs. Reativa e Hit Frame.
+('producao-multimidia-ii','modulo-3','semana-17','Semana 17: Dinamismo Extremo: A Física do Desequilíbrio, Smear e a Cena de Combate',4,'## Semana 17: Dinamismo Extremo: A Física do Desequilíbrio, Smear e a Cena de Combate
+
+**Conteúdos integrados:** Pushing the Pose, Linhas de Ação e Cinéticas, Efeito Smear Deformação Intencional), Linha Ativa vs. Reativa e Hit Frame.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -1486,7 +1520,9 @@ A cena parada ganha força sonora e peso visual.
 **Missão do aluno:** A Forja do Golpe Sísmico Você deve conceber a cena máxima de combate de um jogo de ação, construindo o Hit Frame perfeito através do contraste entre o atacante e o defensor, aplicando deformação de Smear e garantindo espaço negativo para a leitura imediata da silhueta. Checklist do Desafio: Criar um documento com Prancheta 16 9 (1920 x 1080 px a 72 DPI ) no Photoshop. Escolher a natureza do confronto (ex: guerreiro de espada contra cavaleiro negro, ou lutador corpo a corpo contra ciborgue). Desenho do Atacante Linha Ativa): Construir o atacante com o centro de gravidade completamente deslocado à frente (em desequilíbrio dinâmico). Aplicar o Pushing the Pose: exagerar a torção da coluna e a extensão dos membros de ataque. Desenho do Defensor Linha Reativa):
 
 Construir o defensor com a espinha quebrada/curvada na direção oposta ao golpe. Demonstrar a perda de equilíbrio: os pés não devem estar assentados estavelmente no solo. Espaço Negativo: Preservar áreas abertas de fundo entre os personagens, evitando que se fundam em um bloco confuso. Efeito Smear: Deformar ou esticar intencionalmente a arma ou o membro de ataque no ponto de conexão para simular velocidade máxima. VFX de Combate: Adicionar linhas cinéticas direcionais e marcações gráficas de explosão/fumaça no ponto do impacto. Salvar o documento técnico como Cena_Batalha_HitFrame_SeuNome.psd.'),
-('producao-multimidia-ii','modulo-3','semana-18','Semana 18: Pacing, Tensão Psicológica e o Ângulo Holandês (Dutch Angle)',5,'## Semana 18: Pacing, Tensão Psicológica e o Ângulo Holandês (Dutch Angle) Conteúdos integrados: Pacing Cadência Visual), Alternância de Planos Wide Shot vs. Close-up), Claustrofobia Visual, A Regra do Oculto e Ângulo Holandês Dutch Tilt).
+('producao-multimidia-ii','modulo-3','semana-18','Semana 18: Pacing, Tensão Psicológica e o Ângulo Holandês (Dutch Angle)',5,'## Semana 18: Pacing, Tensão Psicológica e o Ângulo Holandês (Dutch Angle)
+
+**Conteúdos integrados:** Pacing Cadência Visual), Alternância de Planos Wide Shot vs. Close-up), Claustrofobia Visual, A Regra do Oculto e Ângulo Holandês Dutch Tilt).
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -1563,7 +1599,9 @@ equilibrado para o horizonte torto e o fechamento em um enquadramento sem espaç
 **Missão do aluno:** A Arquitetura do Medo Sua missão é atuar como Diretor de Arte de uma sequência cinematográfica de horror psicológico ou suspense em games. Você deve construir uma progressão de três cenas manipulando a cadência de planos, a desorientação do horizonte inclinado e o confinamento da visão periférica. Checklist do Desafio: Abrir um documento no Photoshop com 3 Pranchetas 16 9 alinhadas.
 
 Escolher um contexto de perigo iminente (ex: sobrevivente escondido de guardas cibernéticos, explorador acuado por uma fera nas ruínas). Prancheta 1 O Respiro - Wide Shot): Desenhar o ambiente completo com a linha do horizonte perfeitamente reta e nivelada. Posicionar o protagonista ocupando uma área reduzida da tela, cercado por espaço negativo de ar. Prancheta 2 A Quebra - Dutch Angle + Oculto): Inclinar a linha do horizonte e paredes diagonalmente (entre 20 e 35 graus). Não desenhar o inimigo completo: ilustrar apenas um indício físico da ameaça (uma sombra projetada, um rastro ou uma extremidade). Prancheta 3 A Claustrofobia - Extreme Close-up): Eliminar o cenário amplo e preencher o quadro com plano fechado no rosto aterrorizado do protagonista. Emoldurar as laterais da tela com obstáculos próximos (barricadas, caixas, tubulações) para suprimir a visão periférica. Salvar o documento técnico como Pacing_Suspense_SeuNome.psd.'),
-('producao-multimidia-ii','modulo-3','semana-19','Semana 19: Limpeza Técnica (Clean-up), Escala de Cinza e a Forja do Animatic',6,'## Semana 19: Limpeza Técnica (Clean-up), Escala de Cinza e a Forja do Animatic Conteúdos integrados: Clean-up Lineart refinada), Palco 3D em Escala de Cinza Foreground, Midground, Background), Tangência Tonal e Pop-out, Montagem do Animatic e Scratch Audio.
+('producao-multimidia-ii','modulo-3','semana-19','Semana 19: Limpeza Técnica (Clean-up), Escala de Cinza e a Forja do Animatic',6,'## Semana 19: Limpeza Técnica (Clean-up), Escala de Cinza e a Forja do Animatic
+
+**Conteúdos integrados:** Clean-up Lineart refinada), Palco 3D em Escala de Cinza Foreground, Midground, Background), Tangência Tonal e Pop-out, Montagem do Animatic e Scratch Audio.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -1664,7 +1702,9 @@ passos pesados sincronizados no exato segundo do susto. Pressione Play na barra 
 **Missão do aluno:** A Forja do Animatic Profissional Chegou o fecho do Módulo 3. Você deve pegar a sequência de três cenas desenvolvida ao longo das últimas semanas, executar o Clean-up com separação de planos de profundidade em escala de cinza e montar o seu primeiro Animatic com sincronização de tempo e áudio. Checklist do Desafio: Abrir o arquivo de pranchetas de Storyboard das semanas anteriores. Reduzir a opacidade da camada de rascunhos para 20%. Criar a camada Lineart_Limpa e redesenhar os três quadros com linhas firmes e contornos limpos usando Pincel Duro (B ). Aplicar a divisão de planos em Escala de Cinza Grayscale): Foreground: Elementos imediatos à câmera em preto ou cinza quase preto. Midground: Personagens e ações primárias em cinza-médio. Background: Cenário distante em cinza-claro (simulando perspectiva atmosférica). Evitar Tangências Tonais: garantir que personagens em cinza-médio não fiquem sobrepostos a fundos da mesma tonalidade. Realizar a exportação em lote das pranchetas em formato.PNG Full HD (1920 x 1080 px ).
 
 Abrir o painel Linha do Tempo (Janela > Linha do Tempo ) ou um editor de vídeo de apoio Premiere). Ajustar a cadência temporal (Timing) de cada cena, atribuindo durações distintas para refletir o ritmo dramático (cenas rápidas vs. lentas). Inserir pelo menos um efeito sonoro de impacto (Foley) ou áudio gravado sincronizado no momento crítico da cena. Renderizar e exportar o Animatic finalizado em vídeo.MP4 com o nome Animatic_Cutscene_SeuNome.mp4.'),
-('producao-multimidia-ii','modulo-4','semana-20','Semana 20: Fundamentos de UX/UI, Contraste de Gameplay e Acessibilidade Visual',1,'## Semana 20: Fundamentos de UX/UI, Contraste de Gameplay e Acessibilidade Visual Conteúdos integrados: UX vs. UI, Imersão Dinâmica, Interfaces Diegéticas, Camuflagem Acidental vs. Contraste Notan, Cor e Saturação), Codificação Dupla e Testes de Acessibilidade.
+('producao-multimidia-ii','modulo-4','semana-20','Semana 20: Fundamentos de UX/UI, Contraste de Gameplay e Acessibilidade Visual',1,'## Semana 20: Fundamentos de UX/UI, Contraste de Gameplay e Acessibilidade Visual
+
+**Conteúdos integrados:** UX vs. UI, Imersão Dinâmica, Interfaces Diegéticas, Camuflagem Acidental vs. Contraste Notan, Cor e Saturação), Codificação Dupla e Testes de Acessibilidade.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -1757,7 +1797,9 @@ tornam castanhos indistintos, mas o círculo e o triângulo com traçado preto c
 ### Aula 2: Prática dos Alunos (45 min)
 
 **Missão do aluno:** A Auditoria de Acessibilidade e Contraste Assuma a função de Designer de UI/UX num estúdio. Terá de pegar numa imagem de jogo caótica, corrigir os problemas de camuflagem acidental através do contraste de saturação/valor e criar um sistema de ícones de status acessível para daltónicos. Checklist do Desafio: Criar um documento no Photoshop no tamanho 1920 x 1080 px a 72 DPI e importar uma imagem de cenário natural complexo para o fundo. Posicionar duas silhuetas de personagens em jogo: um herói e um oponente. Executar o Teste de Cinzento: criar a camada preta em modo Color no topo e confirmar se as silhuetas mantêm leitura através da separação clara de Notan. Aplicar o Contraste de Saturação: reduzir a saturação do cenário de fundo (Imagem > Ajustes > Matiz/Saturação ) em cerca de 25% a 40%, mantendo os atores com cores vibrantes. Criar um pacote de 3 marcadores de mira ou status de personagem acima das cabeças: Marcador 1 Aliado / Recuperação Círculo + Verde). Marcador 2 Ameaça Crítica / Inimigo Triângulo pontiagudo + Vermelho). Marcador 3 Neutro / Ponto de Interesse Losango ou Quadrado + Azul/Amarelo). Aplicar traçado preto de contorno (Stroke) ou caixa de contraste (Backdrop) em todos os elementos tipográficos ou ícones. Testar a interface no menu Visualizar > Configuração de Prova > Daltonismo e confirmar que a distinção geométrica funciona perfeitamente sem o apoio da cor. Salvar o ficheiro de entrega como Auditoria_Acessibilidade_SeuNome.psd.'),
-('producao-multimidia-ii','modulo-4','semana-21','Semana 21: Arquitetura de HUD e Wireframing de Baixa Fidelidade (Low-Fi)',2,'## Semana 21: Arquitetura de HUD e Wireframing de Baixa Fidelidade (Low-Fi) Conteúdos integrados: O Centro Sagrado da Tela, Convenções de Gênero, Níveis de Informação Crítica, Tática e Contextual), O que é um Wireframe e Montagem Estrutural.
+('producao-multimidia-ii','modulo-4','semana-21','Semana 21: Arquitetura de HUD e Wireframing de Baixa Fidelidade (Low-Fi)',2,'## Semana 21: Arquitetura de HUD e Wireframing de Baixa Fidelidade (Low-Fi)
+
+**Conteúdos integrados:** O Centro Sagrado da Tela, Convenções de Gênero, Níveis de Informação Crítica, Tática e Contextual), O que é um Wireframe e Montagem Estrutural.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -1856,7 +1898,9 @@ As informações vitais encontram-se arrumadas na visão periférica imediata.
 **Missão do aluno:** A Planta Baixa do HUD
 
 Você é o arquiteto de informação da interface de um projeto. A sua missão é criar um Wireframe de Baixa Fidelidade Low-Fi rigorosamente proporcional para um gênero de jogo à sua escolha, preservando o centro do ecrã e estruturando a hierarquia em três níveis. Checklist do Desafio: Abrir um documento no Photoshop no padrão Full HD (1920 x 1080 px a 72 DPI ). Inserir uma captura de ecrã real de gameplay no fundo (proibido trabalhar sobre fundo branco liso). Escolher o gênero do HUD Shooter de Primeira Pessoa, RPG de Ação em Terceira Pessoa ou MOBA/Estratégia. Respeitar a regra da Baixa Fidelidade: utilizar estritamente formas geométricas limpas (retângulos, círculos) em tons de cinzento, sem pintar ilustrações ou ornamentos artísticos. Informação Crítica Nível 1 Barras de saúde, escudos ou munições posicionadas de acordo com as convenções de gênero consagradas. Informação Tática Nível 2 Minimapa, bússola e caixas de habilidades em recarga arrumadas nos cantos opostos. Informação Contextual Nível 3 Caixa de texto discreta para registro de itens apanhados ou legendas. Inserir tipografia neutra de marcação (Placeholder) demonstrando valores numéricos vitais e atalhos de teclado. Confirmar o Centro Sagrado: verificar se a área central de combate está desobstruída. Salvar o ficheiro como Wireframe_HUD_SeuNome.psd.'),
-('producao-multimidia-ii','modulo-4','semana-22','Semana 22: O Design do Ícone Perfeito: Síntese e a Tirania da Escala',3,'## Semana 22: O Design do Ícone Perfeito: Síntese e a Tirania da Escala Conteúdos integrados: A Tirania da Escala 50 50 px), A Arte da Síntese Visual, Silhuetas Exageradas no Notan, Contraste Extremo de Valor e o Teste do Encolhimento Zoom Out).
+('producao-multimidia-ii','modulo-4','semana-22','Semana 22: O Design do Ícone Perfeito: Síntese e a Tirania da Escala',3,'## Semana 22: O Design do Ícone Perfeito: Síntese e a Tirania da Escala
+
+**Conteúdos integrados:** A Tirania da Escala 50 50 px), A Arte da Síntese Visual, Silhuetas Exageradas no Notan, Contraste Extremo de Valor e o Teste do Encolhimento Zoom Out).
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -1955,7 +1999,9 @@ continuam perfeitamente reconhecíveis mesmo em tamanho minúsculo.
 ### Aula 2: Prática dos Alunos (45 min)
 
 **Missão do aluno:** A Forja do Ícone de Ação Você é o artista responsável pelo pacote de ícones de habilidades de um jogo de fantasia ou ficção científica. Terá de conceber dois ícones funcionais em pranchetas de 256 256 px, aplicando a regra da síntese visual e garantindo a sobrevivência estética no Teste do Encolhimento. Checklist do Desafio: Criar dois ficheiros no Photoshop com dimensões de 256 x 256 px a 72 DPI. Escolher duas habilidades distintas (ex: Bola de Fogo Vulcânica, Veneno Ácido, Escudo de Luz ou Disparo Laser). Aplicar o princípio da Síntese Visual: desenhar estritamente o símbolo ou objeto central da ação, descartando cenários e personagens no fundo. Exagerar as proporções anatômicas do elemento (espessuras grossas, pontas expressivas). Construir Contraste Extremo de Notan: usar sombras escuras sólidas em oposição a brilhos brancos ou incandescentes nos centros de impacto. Inserir um contorno escuro (Stroke) exterior ou brilho nítido para separar a forma da caixa do HUD. Aplicar o Teste do Encolhimento: reduzir a visualização no ecrã para a escala de 50 50 px e confirmar a legibilidade imediata. Exportar os dois ícones em formato.PNG com canal alpha transparente: ui_icon_habilidade_01.png ui_icon_habilidade_02.png Salvar os arquivos mestres editáveis como Icones_Skill_SeuNome.psd.'),
-('producao-multimidia-ii','modulo-4','semana-23','Semana 23: Feedback Visual, Sinais Vitais e Game Feel',4,'## Semana 23: Feedback Visual, Sinais Vitais e Game Feel Conteúdos integrados: O Ecrã Vivo, Damage Vignette Vinheta de Dano), Hit Flash Piscar de Impacto), Visão Periférica e o Conceito de "Game Feel" / Juiciness.
+('producao-multimidia-ii','modulo-4','semana-23','Semana 23: Feedback Visual, Sinais Vitais e Game Feel',4,'## Semana 23: Feedback Visual, Sinais Vitais e Game Feel
+
+**Conteúdos integrados:** O Ecrã Vivo, Damage Vignette Vinheta de Dano), Hit Flash Piscar de Impacto), Visão Periférica e o Conceito de "Game Feel" / Juiciness.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -2028,7 +2074,9 @@ no painel: mostre como o "flash" branco relâmpago comunica instantaneamente o i
 **Missão do aluno:** A Arquitetura do Impacto Você é o especialista em Game Feel encarregado de dar peso e visceralidade aos combates do jogo. Terá de construir a textura técnica da Vinheta de Dano (Damage Vignette) e criar uma folha comparativa demonstrando a reação de impacto (Hit Flash) num elemento inimigo. Checklist do Desafio: Criar um Canvas de 1920 x 1080 px a 72 DPI com fundo transparente no Photoshop. Utilizar a Ferramenta Gradiente (G ) no modo Radial. Configurar as paradas de opacidade: centro 100% transparente e bordas externas com vermelho profundo opaco (#990000 ). Aplicar o gradiente do centro para fora, garantindo que o terço central da tela permaneça desobstruído. Configurar o Modo de Mesclagem em Multiply ou Overlay. Exportar a vinheta finalizada em formato.PNG com Canal Alpha com o nome fx_vignette_damage_critico.png. Num segundo arquivo de trabalho: posicionar um asset de personagem inimigo. Criar a versão de Hit Flash: duplicar a camada do inimigo, aplicar Alpha Lock e preencher a 100% com Branco Puro (#FFFFFF ). Simular um Momento de Dano Crítico combinando o fundo do jogo, o sprite inimigo a piscar com o Hit Flash e a Vinheta de Dano ativada por cima de tudo.
 
 Salvar o ficheiro de teste como Feedback_Impacto_SeuNome.psd.'),
-('producao-multimidia-ii','modulo-4','semana-24','Semana 24: O Mockup Completo de Interface e a Metodologia Iterativa de Estúdio',5,'## Semana 24: O Mockup Completo de Interface e a Metodologia Iterativa de Estúdio Conteúdos integrados: Mockup Completo Fake Screenshot), Compositing no Photoshop, O Ciclo D F P Draft > Feedback > Polish), Morte do Ego e Dinâmica de Peer Review com o Método Sanduíche.
+('producao-multimidia-ii','modulo-4','semana-24','Semana 24: O Mockup Completo de Interface e a Metodologia Iterativa de Estúdio',5,'## Semana 24: O Mockup Completo de Interface e a Metodologia Iterativa de Estúdio
+
+**Conteúdos integrados:** Mockup Completo Fake Screenshot), Compositing no Photoshop, O Ciclo D F P Draft > Feedback > Polish), Morte do Ego e Dinâmica de Peer Review com o Método Sanduíche.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -2119,7 +2167,9 @@ pequeno, colisão visual com o herói, falta de backdrop) acompanhado da sugest�
 - O Pão de Baixo: Encorajamento final focado na qualidade do
 
 projeto. Regressar ao seu posto, ler o feedback com escuta ativa e aplicar o ajuste sugerido no arquivo. Exportar a simulação finalizada em formato.PNG com o nome Mockup_Gameplay_Final_SeuNome.png. Salvar o ficheiro mestre em camadas como Mockup_Compositing_SeuNome.psd.'),
-('producao-multimidia-ii','modulo-5','semana-25','Semana 25: Character Design para Jogos: Proporções, Silhuetas e a Linha de Ação',1,'## Semana 25: Character Design para Jogos: Proporções, Silhuetas e a Linha de Ação Conteúdos integrados: A Responsabilidade do Concept Artist, Proporção por Cabeças Realista, Heroica e Chibi), Shape Language Aplicada, O Teste Supremo da Silhueta Negra, Espaço Negativo e a Linha de Ação.
+('producao-multimidia-ii','modulo-5','semana-25','Semana 25: Character Design para Jogos: Proporções, Silhuetas e a Linha de Ação',1,'## Semana 25: Character Design para Jogos: Proporções, Silhuetas e a Linha de Ação
+
+**Conteúdos integrados:** A Responsabilidade do Concept Artist, Proporção por Cabeças Realista, Heroica e Chibi), Shape Language Aplicada, O Teste Supremo da Silhueta Negra, Espaço Negativo e a Linha de Ação.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -2216,7 +2266,9 @@ transmite energia de combate?
 **Missão do aluno:** A Criação do Avatar Dinâmico Você assumirá o posto de Concept Artist principal de um estúdio. Terá de definir a proporção anatómica do protagonista, estruturar uma pose de combate em torno de uma Linha de Ação e aprovar o design no Teste Supremo da Silhueta Negra. Checklist do Desafio:
 
 Criar um documento no Photoshop no formato 1920 x 1080 px a 72 DPI. Escolher a métrica anatómica do projeto: Proporção Heroica 8,5 a 9 cabeças) para jogo de ação ou Proporção Chibi 3 a 4 cabeças) para jogo estilizado/mobile. Construir a coluna de marcação com elipses e linhas-guia horizontais para padronizar as alturas. Traçar numa camada separada a Linha de Ação em arco ("C" ou "S") definindo o fluxo dinâmico da pose. Rascunhar o herói integrando a Shape Language estudada (quadrados para armaduras pesadas, triângulos para agilidade ou círculos para simpatia). Preservar o Espaço Negativo: afastar os braços e armas do tronco para evitar blocos maciços sem leitura. Executar o Blackout Test: criar uma camada preta em Clipping Mask (Ctrl + Alt + G ) e avaliar a silhueta sólida. Realizar ajustes na pose com a borracha ou pincel caso alguma parte do corpo tenha ficado ilegível no teste preto. Salvar o ficheiro de desenvolvimento como Heroi_Conceito_Silhueta_SeuNome.psd.'),
-('producao-multimidia-ii','modulo-5','semana-26','Semana 26: A Planta Baixa do Herói: O Turnaround Técnico (Model Sheet)',2,'## Semana 26: A Planta Baixa do Herói: O Turnaround Técnico (Model Sheet) Conteúdos integrados: Consistência Volumétrica, Turnaround / Model Sheet em 360°, T Pose vs. A Pose, Alinhamento Ortográfico por Réguas Guidelines) e a Importância do Design Traseiro.
+('producao-multimidia-ii','modulo-5','semana-26','Semana 26: A Planta Baixa do Herói: O Turnaround Técnico (Model Sheet)',2,'## Semana 26: A Planta Baixa do Herói: O Turnaround Técnico (Model Sheet)
+
+**Conteúdos integrados:** Consistência Volumétrica, Turnaround / Model Sheet em 360°, T Pose vs. A Pose, Alinhamento Ortográfico por Réguas Guidelines) e a Importância do Design Traseiro.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -2301,7 +2353,9 @@ ombros e cotovelos.
 ### Aula 2: Prática dos Alunos (45 min)
 
 **Missão do aluno:** A Planta Baixa 360° do Herói Você deve construir o documento ortográfico oficial Model Sheet) do seu protagonista, estruturando as três vistas técnicas padronizadas Frente, Perfil e Costas) em A Pose, com rigorosa consistência volumétrica controlada por réguas. Checklist do Desafio: Criar um documento largo no Photoshop: 3000 x 1200 px a 72 DPI com fundo neutro claro. Ativar as réguas com Ctrl + R e traçar pelo menos 6 linhas-guia horizontais travando: Topo da Cabeça, Olhos, Ombros, Cintura, Joelhos e Pés. Bloquear as guias no menu para evitar deslocamentos durante o desenho. Desenhar a Vista Frontal à esquerda do Canvas, utilizando obrigatoriamente a A Pose (braços afastados a 45 graus). Desenhar a Vista de Perfil no centro, alinhando a altura do calcanhar, cinto, nariz e topo da cabeça com a vista frontal pelas guias. Desenhar a Vista Traseira Costas à direita, detalhando o design dos equipamentos dorsais (aljavas, capas, fivelas). Confirmar a Consistência Volumétrica: garantir que a espessura de braços, pernas e acessórios não sofre alterações de escala entre as três vistas. Salvar o ficheiro mestre em camadas como Turnaround_ModelSheet_SeuNome.psd.'),
-('producao-multimidia-ii','modulo-5','semana-27','Semana 27: Preparação para Cut-out (Rigging 2D) e Boas- Vindas ao Adobe Animate',3,'## Semana 27: Preparação para Cut-out (Rigging 2D) e Boas- Vindas ao Adobe Animate Conteúdos integrados: A Lógica da Animação Cut-out Recortes), Hierarquia Cirúrgica de Camadas, Sobreposição de Juntas Overlap Esférico), Nomenclatura Padrão L/R, O Cockpit do Adobe Animate Stage, Timeline, F5 vs. F6) e a Bouncing Ball.
+('producao-multimidia-ii','modulo-5','semana-27','Semana 27: Preparação para Cut-out (Rigging 2D) e Boas- Vindas ao Adobe Animate',3,'## Semana 27: Preparação para Cut-out (Rigging 2D) e Boas- Vindas ao Adobe Animate
+
+**Conteúdos integrados:** A Lógica da Animação Cut-out Recortes), Hierarquia Cirúrgica de Camadas, Sobreposição de Juntas Overlap Esférico), Nomenclatura Padrão L/R, O Cockpit do Adobe Animate Stage, Timeline, F5 vs. F6) e a Bouncing Ball.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -2392,7 +2446,9 @@ pontos temporais em exato 1 segundo!
 **Missão do aluno:** A Dissecação da Marionete e o Primeiro Salto Você irá preparar as partes do corpo do seu protagonista no Photoshop com sobreposição esférica e nomenclatura profissional. De seguida, abrirá o Adobe Animate para dominar a Linha do Tempo através da animação estrutural da bola a saltar. Checklist do Desafio: Etapa Photoshop Preparação Cut-out): Abrir o ficheiro do herói na Vista Frontal. Fatiar o braço e o antebraço em duas camadas distintas com o Laço (L ). Aplicar o Overlap Esférico: pintar um arredondamento curvo na ponta da junta do cotovelo para que não existam cortes retos. Preencher a lateral do tronco que ficou vazia atrás do braço. Aplicar a Nomenclatura Padrão: nomear as camadas com precisão técnica em inglês (Arm_R_Upper, Arm_R_Lower, Torso ). Salvar o ficheiro com as camadas abertas como Heroi_Preparado_Cutout.psd. Etapa Adobe Animate Bouncing Ball): Abrir o Adobe Animate e criar um projeto Full HD a 24 FPS.
 
 Desenhar uma esfera no topo da prancheta no Frame 1. Inserir um Keyframe com F6 no Frame 12 e deslocar a bola para a base da prancheta (o impacto). Inserir um Keyframe com F6 no Frame 24 e retornar a bola ao ponto superior. Pressionar Enter para validar o loop mecânico de 1 segundo. Salvar o arquivo de animação como Exercicio_BouncingBall_SeuNome.fla.'),
-('producao-multimidia-ii','modulo-5','semana-28','Semana 28: Rigging 2D no Adobe Animate: Importação de PSD, Símbolos e a Ciência dos Pivôs',4,'## Semana 28: Rigging 2D no Adobe Animate: Importação de PSD, Símbolos e a Ciência dos Pivôs Conteúdos integrados: Importação Direta PSD to FLA, Preservação de Camadas, Símbolo Movie Clip F8, Ferramenta Transformação Livre Q) e Calibração dos Pivôs Articulares.
+('producao-multimidia-ii','modulo-5','semana-28','Semana 28: Rigging 2D no Adobe Animate: Importação de PSD, Símbolos e a Ciência dos Pivôs',4,'## Semana 28: Rigging 2D no Adobe Animate: Importação de PSD, Símbolos e a Ciência dos Pivôs
+
+**Conteúdos integrados:** Importação Direta PSD to FLA, Preservação de Camadas, Símbolo Movie Clip F8, Ferramenta Transformação Livre Q) e Calibração dos Pivôs Articulares.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -2491,7 +2547,9 @@ Photoshop, o antebraço pode dobrar completamente sem que surja uma única falha
 **Missão do aluno:** A Montagem da Marionete Articular Chegou a hora de estruturar o esqueleto digital Rigging) do seu protagonista. Você importará o arquivo.PSD fatiado para o Adobe Animate, converterá cada parte do corpo em Símbolos individuais e calibrará os eixos de rotação (pivôs) de todas as articulações. Checklist do Desafio:
 
 Abrir um projeto Full HD a 24 FPS no Adobe Animate. Executar o comando Arquivo > Importar > Importar para o Palco selecionando o PSD fatiado do herói. Marcar a opção "Manter camadas do Photoshop" na janela de importação. Organizar as camadas na Linha do Tempo nomeadas em inglês anatómico (Head, Torso, Arm_L_Upper, etc.). Converter cada membro individual num Símbolo de Clipe de Filme com o atalho F8. Ativar a Ferramenta Transformação Livre (Q) para iniciar a calibragem de ancoragem. Reposicionamento dos Pivôs Anatómicos: Cabeça: mover o círculo branco para a base do pescoço. Braços superiores: mover o pivô para a cavidade dos ombros. Antebraços: mover o pivô para o vértice dos cotovelos. Coxas: mover o pivô para as laterais da pélvis/bacia. Pernas inferiores: mover o pivô para o centro dos joelhos. Pés: mover o pivô para os calcanhares. Testar a rotação de cada membro com a ferramenta Q, certificando-se de que nenhuma junta se separa ou quebra a silhueta. Salvar o ficheiro de montagem como Heroi_Rigging_Pronto_SeuNome.fla.'),
-('producao-multimidia-ii','modulo-5','semana-29','Semana 29: Princípios Fundamentais e a Animação "Idle" (Estado de Repouso)',5,'## Semana 29: Princípios Fundamentais e a Animação "Idle" (Estado de Repouso) Conteúdos integrados: Timing & Spacing, Squash & Stretch Preservação de Volume), Antecipação Telegraphing), O que é Animação Idle, Mecânica da Respiração, Loop Perfeito e Overlapping Action Atraso.
+('producao-multimidia-ii','modulo-5','semana-29','Semana 29: Princípios Fundamentais e a Animação "Idle" (Estado de Repouso)',5,'## Semana 29: Princípios Fundamentais e a Animação "Idle" (Estado de Repouso)
+
+**Conteúdos integrados:** Timing & Spacing, Squash & Stretch Preservação de Volume), Antecipação Telegraphing), O que é Animação Idle, Mecânica da Respiração, Loop Perfeito e Overlapping Action Atraso.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -2584,7 +2642,9 @@ balança de forma orgânica e o movimento repete-se perpetuamente sem saltos bru
 ### Aula 2: Prática dos Alunos (45 min)
 
 **Missão do aluno:** O Batimento Cardíaco do Personagem Você deve dar fôlego ao seu herói, coreografando o ciclo contínuo de Idle de 24 quadros no Adobe Animate, aplicando a física da respiração, Overlapping Action na cabeça e micro-movimentos secundários em loop perfeito. Checklist do Desafio: Abrir o arquivo de Rigging do herói no Adobe Animate configurado a 24 FPS. Configurar a pose de repouso no Frame 1 em todas as camadas corporais. Criar Keyframes (F6 ) no Frame 24 de todas as camadas copiando a pose inicial para fechar o Loop Perfeito. Inserir Keyframes (F6 ) no Frame 12 (ápice da inspiração): elevar sutilmente o tronco e rotacione os ombros. Aplicar Squash & Stretch sutil: expandir o tórax levemente na inspiração sem distorcer o volume da cabeça. Aplicar a Ação Sobreposta Overlapping Action): atrasar a rotação da cabeça para o Frame 14, fazendo-a responder com atraso à subida do peito. Inserir pelo menos um Micro-movimento secundário (ajustar a arma, balançar a capa ou piscar de olhos) entre os quadros 6 e 18. Ativar a reprodução contínua em loop e verificar se não há "soluços" ou quebras entre o Frame 24 e o Frame 1. Salvar o ficheiro de animação como Heroi_Animacao_Idle_SeuNome.fla.'),
-('producao-multimidia-ii','modulo-5','semana-30','Semana 30: A Mecânica da Locomoção: Walk Cycle Completo',6,'## Semana 30: A Mecânica da Locomoção: Walk Cycle Completo Conteúdos integrados: A Física da Queda Controlada, As Quatro Poses Chave Contato, Abaixamento, Passagem e Elevação), A Onda de Altura, Regra da Oposição de Membros, Método da Blocagem Pernas e Bacia Primeiro) e Head Bobbing.
+('producao-multimidia-ii','modulo-5','semana-30','Semana 30: A Mecânica da Locomoção: Walk Cycle Completo',6,'## Semana 30: A Mecânica da Locomoção: Walk Cycle Completo
+
+**Conteúdos integrados:** A Física da Queda Controlada, As Quatro Poses Chave Contato, Abaixamento, Passagem e Elevação), A Onda de Altura, Regra da Oposição de Membros, Método da Blocagem Pernas e Bacia Primeiro) e Head Bobbing.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -2691,7 +2751,9 @@ e atitude natural!
 **Missão do aluno:** A Engenharia dos Passos Você deve coreografar o ciclo de caminhada (Walk Cycle) completo do seu protagonista em 24 quadros no Adobe Animate, seguindo a metodologia profissional de blocagem: isolar bacia e pernas nas quatro poses fundamentais antes de acoplar os membros superiores. Checklist do Desafio: Abrir o projeto no Adobe Animate com a marionete pronta a 24 FPS.
 
 Ocultar temporariamente as camadas dos braços, acessórios e cabeça na Linha do Tempo. Animar a Onda de Altura da Bacia: marcar a altura média nos Frames 1, 13 e 25; afundar a bacia nos Frames 4 e 16 (Down); elevar a bacia nos Frames 10 e 22 (Up). Construir as Quatro Poses Chave de Perna: Frames 1 e 13 Contato (compasso aberto tocando o solo). Frames 4 e 16 Abaixamento (joelho flexionado absorvendo a carga). Frames 7 e 19 Passagem (perna de apoio esticada, perna livre cruzando o ar). Frames 10 e 22 Elevação (impulso na ponta dos pés, altura máxima). Copiar rigorosamente o Frame 1 no Frame 25 para assegurar o loop contínuo. Tornar visíveis os braços e aplicar a Regra da Oposição: cruzar perna dianteira com braço oposto em amplitude máxima nos contatos. Aplicar o Head Bobbing: atrasar a descida da cabeça em 2 quadros em relação ao impacto do corpo no chão. Flexionar levemente os cotovelos durante a passagem para que os braços não pareçam tábuas retas engessadas. Salvar o arquivo de animação como Heroi_WalkCycle_Completo_SeuNome.fla.'),
-('producao-multimidia-ii','modulo-5','semana-31','Semana 31: Polimento (Easing), Animação de Ataque e Exportação para Spritesheet',7,'## Semana 31: Polimento (Easing), Animação de Ataque e Exportação para Spritesheet Conteúdos integrados: Slow In / Slow Out Ease In / Ease Out), Curvas de Interpolação no Animate, Animação de Ação Ataque de Espada), Smear Frames e Exportação de Spritesheet Otimizada PNG Metadados JSON.
+('producao-multimidia-ii','modulo-5','semana-31','Semana 31: Polimento (Easing), Animação de Ataque e Exportação para Spritesheet',7,'## Semana 31: Polimento (Easing), Animação de Ataque e Exportação para Spritesheet
+
+**Conteúdos integrados:** Slow In / Slow Out Ease In / Ease Out), Curvas de Interpolação no Animate, Animação de Ação Ataque de Espada), Smear Frames e Exportação de Spritesheet Otimizada PNG Metadados JSON.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -2786,7 +2848,9 @@ com todos os quadros ordenados e o arquivo.JSON contendo a matemática das coord
 **Missão do aluno:** O Golpe Mestre e a Entrega para a Engine Você deve aplicar a desaceleração orgânica de Easing na sua marionete, animar um golpe de ataque impactante com Smear Frame e realizar a exportação técnica da Spritesheet pronta para programação em motor de jogo. Checklist do Desafio: Abrir o projeto no Adobe Animate. Selecionar as camadas de membros e aplicar a Interpolação Clássica (Create Classic Tween). Configurar as propriedades de Easing Slow In / Slow Out) no painel de propriedades para quebrar a linearidade mecânica. Coreografar a Animação de Ataque:
 
 Frames 1 a 6 Pose de Antecipação estendida (arma recuada, tensão muscular acumulada). Frame 7 O Golpe Relâmpago disparado em apenas 1 quadro. Desenhar o Smear Frame: criar a mancha gráfica ou arco curvo simulando o rastro de velocidade cortando o ar. Frames 8 a 16 Pose de Follow-through e desaceleração de recuperação. Centralizar o personagem no palco em todos os quadros para evitar deslocamentos indesejados. Executar o comando Arquivo > Exportar > Exportar Folha de Sprite. Configurar a folha em formato Grade, com resolução em Potência de 2 (2048 x 2048 px ) e fundo transparente. Inserir margem de segurança de Padding de 2 a 4 px entre os quadros para prevenir Texture Bleeding. Ativar a exportação de Metadados em formato JSON. Validar a entrega técnica na pasta: confirmar a existência da imagem spritesheet_heroi_ataque.png acompanhada do arquivo de dados spritesheet_heroi_ataque.json.'),
-('producao-multimidia-ii','modulo-6','semana-32','Semana 32: A Grade do Mundo, o Grid Map e a Engenharia do 9-Slice',1,'## Semana 32: A Grade do Mundo, o Grid Map e a Engenharia do 9-Slice Conteúdos integrados: Arte Modular, Grid Map Grade de Mapa), Tileset e Tile Mapping, Configuração de Grade e Encaixe Magnético Snap no Photoshop, A Regra das Nove Peças 9 Slice) e a Lógica do Autotiling.
+('producao-multimidia-ii','modulo-6','semana-32','Semana 32: A Grade do Mundo, o Grid Map e a Engenharia do 9-Slice',1,'## Semana 32: A Grade do Mundo, o Grid Map e a Engenharia do 9-Slice
+
+**Conteúdos integrados:** Arte Modular, Grid Map Grade de Mapa), Tileset e Tile Mapping, Configuração de Grade e Encaixe Magnético Snap no Photoshop, A Regra das Nove Peças 9 Slice) e a Lógica do Autotiling.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -2887,7 +2951,9 @@ puramente castanho, livre de detalhes chamativos, pronto para repetição infini
 **Missão do aluno:** A Arquitetura da Grade e a Forja do 9 Slice Hoje atuará como Concept Artist técnico de ambiente. A sua missão é parametrizar o Photoshop para operar com precisão de píxeis na grade de 32 32 com encaixe magnético, e construir a silhueta estrutural de um gabarito de 9 Slice completo para uma plataforma de jogo 2D. Checklist do Desafio: Configurar as Preferências do Photoshop em Editar > Preferências > Guias, Grades e Fatias definindo Linha de Grade a cada 32 pixels e subdivisões em 1. Criar um Canvas de 512 x 512 pixels a 72 DPI com fundo transparente. Ativar a visualização da grade (Visualizar > Mostrar > Grade ). Ativar o encaixe magnético (Visualizar > Encaixar Em > Grade ). Bloquear com a Ferramenta Retângulo uma área de exatamente $3\times3$ ladrilhos $96\times96$ píxeis no total) preenchida com a cor base do terreno (castanho para terra ou cinzento para pedra). Arredondar as quinas externas dos 4 blocos de canto com a Borracha (E ), quebrando a rigidez dos ângulos de 90 graus. Pintar a camada de cobertura superior (relva ou musgo) nos 3 blocos do topo, mantendo a Continuidade de Borda nivelada entre eles.
 
 Preservar o bloco do centro (o Miolo): mantê-lo 100% preenchido com a matéria-prima do solo, sem detalhes chamativos ou fendas isoladas. Salvar o ficheiro de trabalho com as camadas editáveis como Tileset_Gabarito_9Slice_SeuNome.psd.'),
-('producao-multimidia-ii','modulo-6','semana-33','Semana 33: Pintura de Terreno Seamless e Iluminação Global do Tileset',2,'## Semana 33: Pintura de Terreno Seamless e Iluminação Global do Tileset Conteúdos integrados: Textura Seamless em Tilesets, Distribuição de Detalhes, Iluminação Global Unificada da Folha, Sobreposição Orgânica Dentes de Relva e Drop Shadow pintada) e o Teste de Clonagem.
+('producao-multimidia-ii','modulo-6','semana-33','Semana 33: Pintura de Terreno Seamless e Iluminação Global do Tileset',2,'## Semana 33: Pintura de Terreno Seamless e Iluminação Global do Tileset
+
+**Conteúdos integrados:** Textura Seamless em Tilesets, Distribuição de Detalhes, Iluminação Global Unificada da Folha, Sobreposição Orgânica Dentes de Relva e Drop Shadow pintada) e o Teste de Clonagem.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
@@ -2986,7 +3052,9 @@ cicatriz em linha reta dividindo as peças? Se sim, pegue na Ferramenta Carimbo 
 **Missão do aluno:** A Pintura do Terreno Orgânico Você deve transformar o gabarito estrutural em blocos de textura rica, renderizando o miolo maciço com encaixe contínuo Seamless), esculpindo a
 
 transição com sombra projetada sob a relva e validando o ladrilho central no Teste de Clonagem. Checklist do Desafio: Abrir o ficheiro Tileset_Gabarito_9Slice com a Grade de 32 32 e o Encaixe magnético ativados. Pintar o bloco do Miolo Center com variações subtis de tom de terra, inserindo pequenas imperfeições com pincéis texturizados. Cumprir a Distribuição de Detalhes: não encostar elementos contrastantes ou pedras nas quatro bordas de corte do quadrado central. Esculpir a Sobreposição Orgânica na linha superior: quebrar a linha reta entre verde e castanho desenhando dentes e tufos de relva. Pintar manualmente a Sombra Projetada (Drop Shadow) numa camada em Multiply logo abaixo das pontas de relva para gerar volume. Aplicar o princípio da Iluminação Global: manter todos os pontos de luz (Highlights) orientados a partir do canto superior esquerdo. Executar o Teste de Clonagem: copiar e empilhar o bloco do Miolo formando uma malha de $2\times2$ blocos adjacentes numa área de teste da tela. Afastar o zoom e inspecionar as junções: confirmar que não há linhas escuras ou falhas denunciando os limites do quadrado. Salvar o ficheiro com as camadas abertas como Tileset_Pintura_Terreno_SeuNome.psd.'),
-('producao-multimidia-ii','modulo-6','semana-34','Semana 34: Quebra de Padrão: Tiles de Variação, Decorações (Props) e Exportação',3,'## Semana 34: Quebra de Padrão: Tiles de Variação, Decorações (Props) e Exportação Conteúdos integrados: O Efeito Papel de Parede Grid Repetition), Tiles de Variação Alternate Tiles A, B e C, Preservação de Bordas, Decorações e Props em Canal Alpha, Quebra de Silhueta e Exportação Final do Tileset.
+('producao-multimidia-ii','modulo-6','semana-34','Semana 34: Quebra de Padrão: Tiles de Variação, Decorações (Props) e Exportação',3,'## Semana 34: Quebra de Padrão: Tiles de Variação, Decorações (Props) e Exportação
+
+**Conteúdos integrados:** O Efeito Papel de Parede Grid Repetition), Tiles de Variação Alternate Tiles A, B e C, Preservação de Bordas, Decorações e Props em Canal Alpha, Quebra de Silhueta e Exportação Final do Tileset.
 
 ### Aula 1: Teoria (10 min) + Demonstração do Professor (30 min)
 
