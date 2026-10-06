@@ -28,6 +28,9 @@ const requestedGuide = Astro.url.searchParams.get('guia');
 const selectedGuide = disciplineGuides.find((guide) => guide.id === requestedGuide) ?? disciplineGuides[0] ?? null;
 const requestedChapter = Astro.url.searchParams.get('capitulo');
 const activeChapter = selectedGuide?.chapters.find((chapter) => chapter.slug === requestedChapter) ?? selectedGuide?.chapters[0] ?? null;
+const noteResult = user && activeChapter
+  ? await supabase.from('teacher_guide_notes').select('content,updated_at').eq('user_id', user.id).eq('chapter_id', activeChapter.id).maybeSingle()
+  : { data: null, error: null };
 const activeChapterIndex = selectedGuide?.chapters.findIndex((chapter) => chapter.id === activeChapter?.id) ?? -1;
 const previousChapter = activeChapterIndex > 0 ? selectedGuide?.chapters[activeChapterIndex - 1] : null;
 const nextChapter = selectedGuide && activeChapterIndex >= 0 ? selectedGuide.chapters[activeChapterIndex + 1] ?? null : null;
@@ -96,6 +99,12 @@ const chapterHref = (guideId: string, chapterSlug: string) => `/professor/guias/
         <section id="teacher-practice-panel" role="tabpanel" aria-labelledby="teacher-practice-tab" class="teacher-tab-panel" hidden>
           {practiceHtml ? <><p class="teacher-practice-label">Atividade para a turma</p><div class="teacher-content prose prose-base mt-5 max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-accent-light prose-blockquote:border-l-highlight-light prose-blockquote:bg-highlight-light/10 prose-blockquote:px-4 prose-blockquote:py-1 dark:prose-invert" set:html={practiceHtml}></div></> : <p class="teacher-practice-empty">A prática do aluno ainda não foi cadastrada neste capítulo.</p>}
         </section>
+        <section class="teacher-notes" aria-labelledby="teacher-notes-title">
+          <div class="teacher-notes-heading"><span aria-hidden="true">▤</span><div><p class="teacher-eyebrow">Planejamento privado</p><h3 id="teacher-notes-title">Minhas notas</h3></div></div>
+          <label class="sr-only" for="teacher-notes-input">Notas pessoais deste capítulo</label>
+          <textarea id="teacher-notes-input" data-chapter={activeChapter.id} maxlength="50000" rows="7" placeholder="Registre ideias, observações para a aula ou ajustes para a próxima turma…">{noteResult.data?.content ?? ''}</textarea>
+          <div class="teacher-notes-footer"><p id="teacher-notes-status" role="status" aria-live="polite">{noteResult.error ? 'Não foi possível carregar suas notas.' : 'Notas privadas, salvas por capítulo.'}</p><button id="teacher-notes-save" type="button"><span aria-hidden="true">↥</span> Salvar minhas notas</button></div>
+        </section>
         <nav class="teacher-chapter-pagination" aria-label="Navegação entre capítulos">
           {previousChapter ? <a class="teacher-previous" href={chapterHref(selectedGuide.id, previousChapter.slug)}><span aria-hidden="true">←</span><span><small>Capítulo anterior</small><strong>{previousChapter.title}</strong></span></a> : <span></span>}
           {nextChapter && <a class="teacher-next" href={chapterHref(selectedGuide.id, nextChapter.slug)}><span class="teacher-eyebrow">Próximo capítulo</span><strong>{nextChapter.title}</strong><span aria-hidden="true">→</span></a>}
@@ -128,6 +137,28 @@ const chapterHref = (guideId: string, chapterSlug: string) => `/professor/guias/
       next?.focus();
       if (next) activateGuideTab(next);
     });
+  });
+  const teacherNotes = document.querySelector<HTMLTextAreaElement>('#teacher-notes-input');
+  const teacherNotesSave = document.querySelector<HTMLButtonElement>('#teacher-notes-save');
+  const teacherNotesStatus = document.querySelector<HTMLElement>('#teacher-notes-status');
+  teacherNotesSave?.addEventListener('click', async () => {
+    if (!teacherNotes || !teacherNotesStatus) return;
+    teacherNotesSave.disabled = true;
+    teacherNotesStatus.textContent = 'Salvando suas notas…';
+    try {
+      const response = await fetch('/api/professor/notes', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chapter_id: teacherNotes.dataset.chapter, content: teacherNotes.value }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Não foi possível salvar suas notas.');
+      teacherNotesStatus.textContent = 'Notas salvas.';
+    } catch (error) {
+      teacherNotesStatus.textContent = error instanceof Error ? error.message : 'Não foi possível salvar suas notas.';
+    } finally {
+      teacherNotesSave.disabled = false;
+    }
   });
   const desktopInput = document.querySelector<HTMLInputElement>('#chapter-filter');
   const mobileInput = document.querySelector<HTMLInputElement>('#mobile-chapter-filter');
@@ -216,6 +247,19 @@ const chapterHref = (guideId: string, chapterSlug: string) => `/professor/guias/
   .teacher-content-tabs [role="tab"][aria-selected="true"] { border-color:var(--color-accent-light); color:var(--color-accent-light); }
   .teacher-practice-label { margin-top:24px; color:var(--color-accent-light); font-size:10px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; }
   .teacher-practice-empty { margin-top:24px; border:1px dashed var(--color-border-light); border-radius:14px; padding:18px; color:var(--color-text-muted-light); font-size:13px; line-height:1.6; }
+  .teacher-notes { margin-top:38px; border:1px solid var(--color-border-light); border-radius:17px; background:var(--color-surface-light); padding:18px; }
+  .teacher-notes-heading { display:flex; align-items:center; gap:10px; }
+  .teacher-notes-heading>span { display:grid; width:34px; height:34px; place-items:center; border-radius:10px; background:color-mix(in srgb,var(--color-accent-light) 10%,transparent); color:var(--color-accent-light); }
+  .teacher-notes-heading .teacher-eyebrow { font-size:9px; }
+  .teacher-notes-heading h3 { margin-top:3px; font-family:'Orbitron',sans-serif; font-size:14px; font-weight:700; }
+  .teacher-notes textarea { display:block; width:100%; min-height:150px; margin-top:14px; resize:vertical; border:1px solid var(--color-border-light); border-radius:12px; background:var(--color-bg-light); padding:12px; color:var(--color-text-main-light); font:inherit; font-size:13px; line-height:1.6; outline:none; }
+  .teacher-notes textarea:focus { border-color:var(--color-accent-light); box-shadow:0 0 0 3px color-mix(in srgb,var(--color-accent-light) 12%,transparent); }
+  .teacher-notes textarea::placeholder { color:var(--color-text-muted-light); }
+  .teacher-notes-footer { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin-top:11px; }
+  .teacher-notes-footer p { color:var(--color-text-muted-light); font-size:10px; }
+  #teacher-notes-save { display:inline-flex; min-height:39px; align-items:center; justify-content:center; gap:8px; border:1px solid var(--color-accent-light); border-radius:999px; background:var(--color-accent-light); padding:0 15px; color:#fff; font-size:11px; font-weight:700; transition:opacity .15s,transform .15s; }
+  #teacher-notes-save:hover:not(:disabled) { transform:translateY(-1px); }
+  #teacher-notes-save:disabled { cursor:wait; opacity:.6; }
   .teacher-chapter-pagination { display:flex; justify-content:space-between; gap:12px; margin-top:48px; border-top:1px solid var(--color-border-light); padding-top:18px; }
   .teacher-previous,.teacher-next { display:flex; max-width:48%; align-items:center; gap:10px; border:1px solid var(--color-border-light); border-radius:13px; padding:10px 13px; color:var(--color-text-main-light); }
   .teacher-previous span:last-child { display:grid; gap:3px; }
@@ -247,6 +291,9 @@ const chapterHref = (guideId: string, chapterSlug: string) => `/professor/guias/
   :global(.dark) .teacher-content-tabs [role="tab"] { color:var(--color-text-muted-dark); }
   :global(.dark) .teacher-content-tabs [role="tab"][aria-selected="true"] { color:var(--color-accent-dark); }
   :global(.dark) .teacher-practice-empty { color:var(--color-text-muted-dark); }
+  :global(.dark) .teacher-notes { border-color:var(--color-border-dark); background:var(--color-surface-dark); }
+  :global(.dark) .teacher-notes textarea { border-color:var(--color-border-dark); background:var(--color-bg-dark); color:var(--color-text-main-dark); }
+  :global(.dark) .teacher-notes textarea::placeholder,:global(.dark) .teacher-notes-footer p { color:var(--color-text-muted-dark); }
   @media(max-width:1199px) { .teacher-reader { grid-template-columns:250px minmax(0,1fr); } .teacher-reader-right { display:none; } }
   @media(max-width:900px) {
     .teacher-reader { display:block; }
@@ -279,5 +326,13 @@ const chapterHref = (guideId: string, chapterSlug: string) => `/professor/guias/
     .teacher-private-note { display:none; }
     .teacher-reader-main { padding:28px 19px; }
     .chapter-title { font-size:clamp(23px,7vw,34px); }
+    .teacher-chapter-pagination { flex-direction:column; align-items:stretch; gap:10px; margin-top:34px; }
+    .teacher-previous { width:min(78%,420px); max-width:none; align-self:flex-start; }
+    .teacher-next { width:100%; max-width:none; min-height:82px; padding:17px 18px; }
+    .teacher-next strong { max-width:calc(100% - 34px); font-size:13px; line-height:1.45; }
+    .teacher-next .teacher-eyebrow { font-size:9px; }
+    .teacher-notes { padding:15px; }
+    .teacher-notes-footer { align-items:stretch; }
+    #teacher-notes-save { width:100%; min-height:44px; }
   }
 </style>
