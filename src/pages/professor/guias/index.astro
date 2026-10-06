@@ -29,6 +29,13 @@ const guides = (guideRows ?? []).map((guide) => ({
   moduleName: modules.find((module) => module.id === guide.module_id)?.name ?? guide.title,
   chapters: (chapterRows ?? []).filter((chapter) => chapter.guide_id === guide.id),
 }));
+const guideGroups = [...new Set(guides.map((guide) => guide.discipline_slug))].map((disciplineSlug) => {
+  const disciplineGuides = guides.filter((guide) => guide.discipline_slug === disciplineSlug);
+  return {
+    disciplineName: disciplineGuides[0]?.disciplineName ?? disciplineSlug,
+    guides: disciplineGuides,
+  };
+});
 
 const requestedGuide = Astro.url.searchParams.get('guia');
 const selectedGuide = guides.find((guide) => guide.id === requestedGuide) ?? guides[0] ?? null;
@@ -52,12 +59,12 @@ const chapterHref = (guideId: string, chapterSlug: string) => `/professor/guias?
         <h1 class="mt-2 font-display text-xl font-semibold">Guias de ensino</h1>
         <p class="mt-2 text-xs leading-relaxed text-text-muted-light dark:text-text-muted-dark">Planos de aula e materiais de apoio organizados por módulo e capítulo.</p>
         <nav class="teacher-guide-nav mt-6" aria-label="Guias, módulos e capítulos">
-          {guides.map((guide) => <section class="teacher-guide-group">
-            <p class="teacher-guide-discipline">{guide.disciplineName}</p>
-            <details open={selectedGuide?.id === guide.id} class="teacher-module-group">
+          {guideGroups.map((group) => <section class="teacher-guide-group">
+            <p class="teacher-guide-discipline">{group.disciplineName}</p>
+            {group.guides.map((guide) => <details open={selectedGuide?.id === guide.id} class="teacher-module-group">
               <summary><span class="teacher-module-number">{String(modules.find((item) => item.id === guide.module_id)?.sort_order ?? 1).padStart(2, '0')}</span><span class="min-w-0 flex-1"><strong>{guide.moduleName}</strong><small>{guide.chapters.length} capítulos</small></span><span aria-hidden="true" class="teacher-module-chevron">⌄</span></summary>
               <ul>{guide.chapters.map((chapter) => <li><a class:list={["teacher-chapter-link", { 'teacher-chapter-current': activeChapter?.id === chapter.id }]} href={chapterHref(guide.id, chapter.slug)} aria-current={activeChapter?.id === chapter.id ? 'page' : undefined}><span>{String(chapter.chapter_order).padStart(2, '0')}</span><strong>{chapter.title}</strong></a></li>)}</ul>
-            </details>
+            </details>)}
           </section>)}
         </nav>
         {guides.length === 0 && !loadError && <p class="teacher-reader-empty-note">Seus próximos guias serão organizados aqui por disciplina e módulo.</p>}
@@ -102,6 +109,7 @@ const chapterHref = (guideId: string, chapterSlug: string) => `/professor/guias?
   .back-admin { color:var(--color-accent-light); font-size:11px; font-weight:700; }
   .teacher-eyebrow { color:var(--color-accent-light); font-size:10px; font-weight:800; letter-spacing:.17em; text-transform:uppercase; }
   .teacher-guide-group { margin-top:20px; }
+  .teacher-module-group + .teacher-module-group { margin-top:8px; }
   .teacher-guide-discipline { margin:0 8px 8px; color:var(--color-text-muted-light); font-size:9px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
   .teacher-module-group summary { display:flex; align-items:center; gap:9px; cursor:pointer; list-style:none; border-bottom:1px solid var(--color-border-light); padding:9px 7px 12px; }
   .teacher-module-group summary::-webkit-details-marker { display:none; }
