@@ -12,7 +12,7 @@ const [authResult, disciplineResult, guideResult, chapterResult, moduleResult] =
   supabase.auth.getUser(),
   supabase.from('disciplines').select('slug,name,description').eq('slug', disciplineSlug).maybeSingle(),
   supabase.from('teacher_guides').select('id,discipline_slug,module_id,title,source_filename,storage_path,page_count').eq('discipline_slug', disciplineSlug).order('created_at'),
-  supabase.from('teacher_guide_chapters').select('id,guide_id,slug,title,chapter_order,content_markdown,created_at,updated_at').order('chapter_order'),
+  supabase.from('teacher_guide_chapters').select('id,guide_id,slug,title,chapter_order,content_markdown,theory_markdown,bench_markdown,student_practice_markdown,created_at,updated_at').order('chapter_order'),
   supabase.from('modules').select('id,name,sort_order').eq('discipline_slug', disciplineSlug).order('sort_order'),
 ]);
 const user = authResult.data.user;
@@ -38,11 +38,14 @@ const rawMarkdown = activeChapter?.content_markdown ?? '';
 const benchHeading = /^\s*#{0,6}\s*(?:\d+\.\s*)?(?:Passo a Passo da Demonstração do Professor|Projeto da Demonstração)\b.*$/im.exec(rawMarkdown);
 const practiceHeading = /^\s*#{0,6}\s*Aula\s+\d+\s*:\s*Prática dos Alunos\b.*$/im.exec(rawMarkdown);
 const splitAt = (benchHeading?.index ?? Infinity) < (practiceHeading?.index ?? Infinity) ? benchHeading!.index : practiceHeading?.index ?? Infinity;
-const theoryMarkdown = Number.isFinite(splitAt) ? rawMarkdown.slice(0, splitAt).trim() : rawMarkdown;
-const benchMarkdown = benchHeading
+const legacyTheoryMarkdown = Number.isFinite(splitAt) ? rawMarkdown.slice(0, splitAt).trim() : rawMarkdown;
+const legacyBenchMarkdown = benchHeading
   ? rawMarkdown.slice(benchHeading.index, practiceHeading && practiceHeading.index > benchHeading.index ? practiceHeading.index : undefined).trim()
   : '';
-const practiceMarkdown = practiceHeading ? rawMarkdown.slice(practiceHeading.index).trim() : '';
+const legacyPracticeMarkdown = practiceHeading ? rawMarkdown.slice(practiceHeading.index).trim() : '';
+const theoryMarkdown = activeChapter?.theory_markdown || legacyTheoryMarkdown;
+const benchMarkdown = activeChapter?.bench_markdown || legacyBenchMarkdown;
+const practiceMarkdown = activeChapter?.student_practice_markdown || legacyPracticeMarkdown;
 const theoryHtml = theoryMarkdown ? sanitizeHtml(await marked.parse(theoryMarkdown)) : '';
 const benchHtml = benchMarkdown ? sanitizeHtml(await marked.parse(benchMarkdown)) : '';
 const practiceHtml = practiceMarkdown ? sanitizeHtml(await marked.parse(practiceMarkdown)) : '';
