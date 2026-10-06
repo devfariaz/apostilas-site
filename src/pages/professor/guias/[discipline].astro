@@ -31,7 +31,12 @@ const activeChapter = selectedGuide?.chapters.find((chapter) => chapter.slug ===
 const activeChapterIndex = selectedGuide?.chapters.findIndex((chapter) => chapter.id === activeChapter?.id) ?? -1;
 const previousChapter = activeChapterIndex > 0 ? selectedGuide?.chapters[activeChapterIndex - 1] : null;
 const nextChapter = selectedGuide && activeChapterIndex >= 0 ? selectedGuide.chapters[activeChapterIndex + 1] ?? null : null;
-const contentHtml = activeChapter ? sanitizeHtml(await marked.parse(activeChapter.content_markdown ?? '')) : '';
+const rawMarkdown = activeChapter?.content_markdown ?? '';
+const practiceHeading = /^\s*#{0,6}\s*Aula\s+\d+\s*:\s*Prática dos Alunos\b.*$/im.exec(rawMarkdown);
+const theoryMarkdown = practiceHeading ? rawMarkdown.slice(0, practiceHeading.index).trim() : rawMarkdown;
+const practiceMarkdown = practiceHeading ? rawMarkdown.slice(practiceHeading.index).trim() : '';
+const theoryHtml = theoryMarkdown ? sanitizeHtml(await marked.parse(theoryMarkdown)) : '';
+const practiceHtml = practiceMarkdown ? sanitizeHtml(await marked.parse(practiceMarkdown)) : '';
 const loadError = Boolean(disciplineResult.error || guideResult.error || chapterResult.error || moduleResult.error);
 const chapterHref = (guideId: string, chapterSlug: string) => `/professor/guias/${encodeURIComponent(disciplineSlug)}?guia=${encodeURIComponent(guideId)}&capitulo=${encodeURIComponent(chapterSlug)}`;
 ---
@@ -71,7 +76,16 @@ const chapterHref = (guideId: string, chapterSlug: string) => `/professor/guias/
         <p class="teacher-eyebrow chapter-eyebrow">{String(activeChapter.chapter_order).padStart(2, '0')} · MATERIAL DO PROFESSOR</p>
         <h2 class="chapter-title">{activeChapter.title}</h2>
         <div class="teacher-chapter-meta"><span>{selectedGuide.title}</span><span>Guia privado de planejamento</span></div>
-        <div class="teacher-content prose prose-base mt-8 max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-accent-light prose-blockquote:border-l-highlight-light prose-blockquote:bg-highlight-light/10 prose-blockquote:px-4 prose-blockquote:py-1 dark:prose-invert" set:html={contentHtml}></div>
+        <div class="teacher-content-tabs" role="tablist" aria-label={`Conteúdo de ${activeChapter.title}`}>
+          <button type="button" id="teacher-theory-tab" role="tab" aria-selected="true" aria-controls="teacher-theory-panel">Teoria</button>
+          <button type="button" id="teacher-practice-tab" role="tab" aria-selected="false" aria-controls="teacher-practice-panel">Guia de bancada</button>
+        </div>
+        <section id="teacher-theory-panel" role="tabpanel" aria-labelledby="teacher-theory-tab" class="teacher-tab-panel">
+          <div class="teacher-content prose prose-base mt-8 max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-accent-light prose-blockquote:border-l-highlight-light prose-blockquote:bg-highlight-light/10 prose-blockquote:px-4 prose-blockquote:py-1 dark:prose-invert" set:html={theoryHtml}></div>
+        </section>
+        <section id="teacher-practice-panel" role="tabpanel" aria-labelledby="teacher-practice-tab" class="teacher-tab-panel" hidden>
+          {practiceHtml ? <><p class="teacher-practice-label">Guia de bancada</p><div class="teacher-content prose prose-base mt-5 max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-accent-light prose-blockquote:border-l-highlight-light prose-blockquote:bg-highlight-light/10 prose-blockquote:px-4 prose-blockquote:py-1 dark:prose-invert" set:html={practiceHtml}></div></> : <p class="teacher-practice-empty">O guia de bancada deste capítulo ainda não foi cadastrado.</p>}
+        </section>
         <nav class="teacher-chapter-pagination" aria-label="Navegação entre capítulos">
           {previousChapter ? <a class="teacher-previous" href={chapterHref(selectedGuide.id, previousChapter.slug)}><span aria-hidden="true">←</span><span><small>Capítulo anterior</small><strong>{previousChapter.title}</strong></span></a> : <span></span>}
           {nextChapter && <a class="teacher-next" href={chapterHref(selectedGuide.id, nextChapter.slug)}><span class="teacher-eyebrow">Próximo capítulo</span><strong>{nextChapter.title}</strong><span aria-hidden="true">→</span></a>}
@@ -86,6 +100,25 @@ const chapterHref = (guideId: string, chapterSlug: string) => `/professor/guias/
 </BaseLayout>
 
 <script>
+  const guideTabs = [...document.querySelectorAll<HTMLButtonElement>('.teacher-content-tabs [role="tab"]')];
+  const activateGuideTab = (tab: HTMLButtonElement) => {
+    guideTabs.forEach((item) => {
+      const selected = item === tab;
+      item.setAttribute('aria-selected', String(selected));
+      const panel = document.getElementById(item.getAttribute('aria-controls') ?? '');
+      if (panel) panel.hidden = !selected;
+    });
+  };
+  guideTabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => activateGuideTab(tab));
+    tab.addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      event.preventDefault();
+      const next = guideTabs[(index + (event.key === 'ArrowRight' ? 1 : -1) + guideTabs.length) % guideTabs.length];
+      next?.focus();
+      if (next) activateGuideTab(next);
+    });
+  });
   const desktopInput = document.querySelector<HTMLInputElement>('#chapter-filter');
   const mobileInput = document.querySelector<HTMLInputElement>('#mobile-chapter-filter');
   const moduleItems = [...document.querySelectorAll<HTMLElement>('[data-search-item]')];
@@ -168,6 +201,11 @@ const chapterHref = (guideId: string, chapterSlug: string) => `/professor/guias/
   .chapter-title { margin-top:8px; font-family:'Orbitron',sans-serif; font-size:clamp(24px,4vw,42px); font-weight:700; line-height:1.2; }
   .teacher-chapter-meta { display:flex; flex-wrap:wrap; gap:10px 18px; margin-top:18px; color:var(--color-text-muted-light); font-size:10px; text-transform:uppercase; letter-spacing:.08em; }
   .teacher-chapter-meta span+span { border-left:1px solid var(--color-border-light); padding-left:18px; }
+  .teacher-content-tabs { display:flex; gap:24px; margin-top:34px; border-bottom:1px solid var(--color-border-light); }
+  .teacher-content-tabs [role="tab"] { border-bottom:2px solid transparent; padding:11px 3px; color:var(--color-text-muted-light); font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+  .teacher-content-tabs [role="tab"][aria-selected="true"] { border-color:var(--color-accent-light); color:var(--color-accent-light); }
+  .teacher-practice-label { margin-top:24px; color:var(--color-accent-light); font-size:10px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; }
+  .teacher-practice-empty { margin-top:24px; border:1px dashed var(--color-border-light); border-radius:14px; padding:18px; color:var(--color-text-muted-light); font-size:13px; line-height:1.6; }
   .teacher-chapter-pagination { display:flex; justify-content:space-between; gap:12px; margin-top:48px; border-top:1px solid var(--color-border-light); padding-top:18px; }
   .teacher-previous,.teacher-next { display:flex; max-width:48%; align-items:center; gap:10px; border:1px solid var(--color-border-light); border-radius:13px; padding:10px 13px; color:var(--color-text-main-light); }
   .teacher-previous span:last-child { display:grid; gap:3px; }
@@ -195,6 +233,10 @@ const chapterHref = (guideId: string, chapterSlug: string) => `/professor/guias/
   :global(.dark) .teacher-previous { border-color:var(--color-border-dark); color:var(--color-text-main-dark); }
   :global(.dark) .teacher-guide-info { background:color-mix(in srgb,var(--color-accent-dark) 8%,var(--color-surface-dark)); }
   :global(.dark) .teacher-reader-empty-note,:global(.dark) .teacher-reader-hint { border-color:var(--color-border-dark); }
+  :global(.dark) .teacher-content-tabs,:global(.dark) .teacher-practice-empty { border-color:var(--color-border-dark); }
+  :global(.dark) .teacher-content-tabs [role="tab"] { color:var(--color-text-muted-dark); }
+  :global(.dark) .teacher-content-tabs [role="tab"][aria-selected="true"] { color:var(--color-accent-dark); }
+  :global(.dark) .teacher-practice-empty { color:var(--color-text-muted-dark); }
   @media(max-width:1199px) { .teacher-reader { grid-template-columns:250px minmax(0,1fr); } .teacher-reader-right { display:none; } }
   @media(max-width:900px) {
     .teacher-reader { display:block; }
