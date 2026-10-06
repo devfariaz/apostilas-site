@@ -1,0 +1,231 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { createSupabaseServerClient } from '../../../lib/supabase';
+import { marked } from 'marked';
+import sanitizeHtml from 'sanitize-html';
+
+export const prerender = false;
+
+const disciplineSlug = Astro.params.discipline ?? '';
+const supabase = createSupabaseServerClient(Astro.cookies, Astro.request);
+const [authResult, disciplineResult, guideResult, chapterResult, moduleResult] = await Promise.all([
+  supabase.auth.getUser(),
+  supabase.from('disciplines').select('slug,name,description').eq('slug', disciplineSlug).maybeSingle(),
+  supabase.from('teacher_guides').select('id,discipline_slug,module_id,title,source_filename,storage_path,page_count').eq('discipline_slug', disciplineSlug).order('created_at'),
+  supabase.from('teacher_guide_chapters').select('id,guide_id,slug,title,chapter_order,content_markdown,created_at,updated_at').order('chapter_order'),
+  supabase.from('modules').select('id,name,sort_order').eq('discipline_slug', disciplineSlug).order('sort_order'),
+]);
+const user = authResult.data.user;
+const discipline = disciplineResult.data;
+const modules = moduleResult.data ?? [];
+const disciplineGuides = (guideResult.data ?? []).map((guide) => ({
+  ...guide,
+  moduleName: guide.title,
+  moduleOrder: modules.find((module) => module.id === guide.module_id)?.sort_order ?? 99,
+  chapters: (chapterResult.data ?? []).filter((chapter) => chapter.guide_id === guide.id).sort((a, b) => a.chapter_order - b.chapter_order),
+})).sort((a, b) => a.moduleOrder - b.moduleOrder);
+const requestedGuide = Astro.url.searchParams.get('guia');
+const selectedGuide = disciplineGuides.find((guide) => guide.id === requestedGuide) ?? disciplineGuides[0] ?? null;
+const requestedChapter = Astro.url.searchParams.get('capitulo');
+const activeChapter = selectedGuide?.chapters.find((chapter) => chapter.slug === requestedChapter) ?? selectedGuide?.chapters[0] ?? null;
+const activeChapterIndex = selectedGuide?.chapters.findIndex((chapter) => chapter.id === activeChapter?.id) ?? -1;
+const previousChapter = activeChapterIndex > 0 ? selectedGuide?.chapters[activeChapterIndex - 1] : null;
+const nextChapter = selectedGuide && activeChapterIndex >= 0 ? selectedGuide.chapters[activeChapterIndex + 1] ?? null : null;
+const contentHtml = activeChapter ? sanitizeHtml(await marked.parse(activeChapter.content_markdown ?? '')) : '';
+const loadError = Boolean(disciplineResult.error || guideResult.error || chapterResult.error || moduleResult.error);
+const chapterHref = (guideId: string, chapterSlug: string) => `/professor/guias/${encodeURIComponent(disciplineSlug)}?guia=${encodeURIComponent(guideId)}&capitulo=${encodeURIComponent(chapterSlug)}`;
+---
+
+<BaseLayout title={`${discipline?.name ?? 'Guias do professor'} — Professor Deivid Nobre - Apostilas`} description={`Guias do professor de ${discipline?.name ?? 'uma disciplina'}.`} user={user}>
+  <div class="teacher-reader">
+    <aside class="teacher-reader-left">
+      <div class="teacher-reader-left-inner">
+        <a href="/professor/guias" class="back-hub">← Todas as disciplinas</a>
+        <p class="teacher-eyebrow mt-6">Área exclusiva do professor</p>
+        <h1 class="teacher-discipline-title">{discipline?.name ?? 'Disciplina'}</h1>
+        <p class="teacher-sidebar-intro">Módulos e capítulos do guia.</p>
+
+        <label class="desktop-chapter-search"><span aria-hidden="true">⌕</span><span class="sr-only">Buscar capítulo</span><input id="chapter-filter" type="search" autocomplete="off" placeholder="Encontrar capítulo" /></label>
+        <div class="mobile-chapter-search">
+          <button id="mobile-search-toggle" type="button" aria-expanded="false" aria-controls="mobile-search-panel"><span aria-hidden="true">⌕</span><span>Buscar capítulo</span><span class="mobile-search-chevron" aria-hidden="true">⌄</span></button>
+          <section id="mobile-search-panel" class="mobile-search-panel" hidden aria-label="Buscar capítulo">
+            <div class="mobile-search-input-row"><label class="sr-only" for="mobile-chapter-filter">Digite o nome do capítulo</label><input id="mobile-chapter-filter" type="search" autocomplete="off" enterkeyhint="search" placeholder="Digite o nome do capítulo" /><button id="mobile-search-close" type="button" aria-label="Fechar busca">×</button></div>
+            <p class="mobile-search-caption">Capítulos desta disciplina</p>
+            <div class="mobile-search-results">{disciplineGuides.flatMap((guide) => guide.chapters.map((chapter) => <a data-mobile-search-item data-title={`${chapter.title} ${guide.moduleName}`} href={chapterHref(guide.id, chapter.slug)}><span><strong>{chapter.title}</strong><small>{guide.moduleName}</small></span><span aria-hidden="true">↗</span></a>))}<p id="mobile-search-empty" hidden>Nenhum capítulo encontrado.</p></div>
+          </section>
+        </div>
+
+        {disciplineGuides.length ? <nav id="chapter-nav" class="teacher-guide-nav" aria-label="Módulos e capítulos">
+          {disciplineGuides.map((guide) => <details class="teacher-module-group" open={selectedGuide?.id === guide.id}>
+            <summary><span class="teacher-module-number">{String(guide.moduleOrder).padStart(2, '0')}</span><span class="min-w-0 flex-1"><strong>{guide.moduleName}</strong><small>{guide.chapters.length} capítulos</small></span><span aria-hidden="true" class="teacher-module-chevron">⌄</span></summary>
+            <ul>{guide.chapters.map((chapter) => <li data-search-item data-search-text={`${chapter.title} ${guide.moduleName}`}><a class:list={["teacher-chapter-link", { 'teacher-chapter-current': activeChapter?.id === chapter.id }]} href={chapterHref(guide.id, chapter.slug)} aria-current={activeChapter?.id === chapter.id ? 'page' : undefined}><span>{String(chapter.chapter_order).padStart(2, '0')}</span><strong>{chapter.title}</strong></a></li>)}</ul>
+          </details>)}
+        </nav> : <p class="teacher-reader-empty-note">Ainda não há módulos cadastrados para esta disciplina.</p>}
+        <div class="teacher-private-note"><span aria-hidden="true">▣</span><p>Biblioteca privada do professor.</p></div>
+      </div>
+    </aside>
+
+    <main class="teacher-reader-main">
+      {loadError ? <section class="teacher-reader-empty" role="alert"><p class="teacher-eyebrow">Biblioteca de ensino</p><h2>Não foi possível carregar os capítulos</h2><p>Atualize a página e tente novamente.</p></section> : selectedGuide && activeChapter ? <article class="teacher-chapter">
+        <a href={`/professor/guias/${encodeURIComponent(disciplineSlug)}?guia=${selectedGuide.id}`} class="teacher-module-kicker">{discipline?.name}<span></span>{selectedGuide.moduleName}</a>
+        <p class="teacher-eyebrow chapter-eyebrow">{String(activeChapter.chapter_order).padStart(2, '0')} · MATERIAL DO PROFESSOR</p>
+        <h2 class="chapter-title">{activeChapter.title}</h2>
+        <div class="teacher-chapter-meta"><span>{selectedGuide.title}</span><span>Guia privado de planejamento</span></div>
+        <div class="teacher-content prose prose-base mt-8 max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-accent-light prose-blockquote:border-l-highlight-light prose-blockquote:bg-highlight-light/10 prose-blockquote:px-4 prose-blockquote:py-1 dark:prose-invert" set:html={contentHtml}></div>
+        <nav class="teacher-chapter-pagination" aria-label="Navegação entre capítulos">
+          {previousChapter ? <a class="teacher-previous" href={chapterHref(selectedGuide.id, previousChapter.slug)}><span aria-hidden="true">←</span><span><small>Capítulo anterior</small><strong>{previousChapter.title}</strong></span></a> : <span></span>}
+          {nextChapter && <a class="teacher-next" href={chapterHref(selectedGuide.id, nextChapter.slug)}><span class="teacher-eyebrow">Próximo capítulo</span><strong>{nextChapter.title}</strong><span aria-hidden="true">→</span></a>}
+        </nav>
+      </article> : <section class="teacher-reader-empty"><p class="teacher-eyebrow">Biblioteca de ensino</p><h2>Seus guias ficarão aqui</h2><a href="/professor/guias">Voltar às disciplinas</a></section>}
+    </main>
+
+    <aside class="teacher-reader-right"><div class="teacher-reader-right-inner">
+      {activeChapter && selectedGuide ? <><p class="teacher-eyebrow">Planejamento</p><h2 class="right-title">Material de apoio</h2><p class="right-copy">Conteúdo estruturado para leitura no site, separado da área dos alunos.</p><div class="teacher-guide-info"><span>DISCIPLINA</span><strong>{discipline?.name}</strong><span>MÓDULO</span><strong>{selectedGuide.moduleName}</strong><span>CAPÍTULO</span><strong>{activeChapter.chapter_order} de {selectedGuide.chapters.length}</strong></div>{selectedGuide.storage_path && <a class="teacher-source-link" href={`/api/professor/guias/${selectedGuide.id}/arquivo`}><span aria-hidden="true">↓</span> Baixar PDF original</a>}</> : <div class="teacher-reader-hint">Selecione um capítulo para abrir o conteúdo.</div>}
+    </div></aside>
+  </div>
+</BaseLayout>
+
+<script>
+  const desktopInput = document.querySelector<HTMLInputElement>('#chapter-filter');
+  const mobileInput = document.querySelector<HTMLInputElement>('#mobile-chapter-filter');
+  const moduleItems = [...document.querySelectorAll<HTMLElement>('[data-search-item]')];
+  const moduleGroups = [...document.querySelectorAll<HTMLDetailsElement>('.teacher-module-group')];
+  const mobileItems = [...document.querySelectorAll<HTMLAnchorElement>('[data-mobile-search-item]')];
+  const mobilePanel = document.querySelector<HTMLElement>('#mobile-search-panel');
+  const mobileToggle = document.querySelector<HTMLButtonElement>('#mobile-search-toggle');
+  const filterModules = (value: string) => {
+    const query = value.trim().toLocaleLowerCase('pt-BR');
+    for (const item of moduleItems) item.hidden = Boolean(query) && !item.dataset.searchText?.toLocaleLowerCase('pt-BR').includes(query);
+    for (const group of moduleGroups) {
+      const hasMatch = [...group.querySelectorAll<HTMLElement>('[data-search-item]')].some((item) => !item.hidden);
+      group.hidden = Boolean(query) && !hasMatch;
+      if (query && hasMatch) group.open = true;
+    }
+  };
+  const filterMobile = (value: string) => {
+    const query = value.trim().toLocaleLowerCase('pt-BR');
+    let visible = 0;
+    for (const item of mobileItems) {
+      item.hidden = Boolean(query) && !item.dataset.title?.toLocaleLowerCase('pt-BR').includes(query);
+      if (!item.hidden) visible++;
+    }
+    const empty = document.querySelector<HTMLElement>('#mobile-search-empty');
+    if (empty) empty.hidden = visible > 0;
+  };
+  desktopInput?.addEventListener('input', () => filterModules(desktopInput.value));
+  mobileInput?.addEventListener('input', () => filterMobile(mobileInput.value));
+  mobileToggle?.addEventListener('click', () => {
+    if (!mobilePanel) return;
+    const opening = mobilePanel.hidden;
+    mobilePanel.hidden = !opening;
+    mobileToggle.setAttribute('aria-expanded', String(opening));
+    if (opening) mobileInput?.focus({ preventScroll: true });
+  });
+  document.querySelector<HTMLButtonElement>('#mobile-search-close')?.addEventListener('click', () => {
+    if (mobilePanel) mobilePanel.hidden = true;
+    mobileToggle?.setAttribute('aria-expanded', 'false');
+    if (mobileInput) mobileInput.value = '';
+    filterMobile('');
+  });
+</script>
+
+<style>
+  .teacher-reader { display:grid; min-height:calc(100dvh - 76px); grid-template-columns:260px minmax(0,1fr) 240px; }
+  .teacher-reader-left,.teacher-reader-right { min-width:0; border-color:var(--color-border-light); }
+  .teacher-reader-left { border-right:1px solid var(--color-border-light); }
+  .teacher-reader-right { border-left:1px solid var(--color-border-light); }
+  .teacher-reader-left-inner,.teacher-reader-right-inner { position:sticky; top:84px; max-height:calc(100dvh - 84px); overflow:auto; padding:22px 17px; }
+  .teacher-reader-main { min-width:0; padding:clamp(24px,5vw,64px) clamp(22px,6vw,84px); }
+  .teacher-chapter { margin:0 auto; max-width:780px; }
+  .back-hub { color:var(--color-accent-light); font-size:11px; font-weight:700; }
+  .teacher-eyebrow { color:var(--color-accent-light); font-size:10px; font-weight:800; letter-spacing:.17em; text-transform:uppercase; }
+  .teacher-discipline-title { margin-top:8px; font-family:'Orbitron',sans-serif; font-size:16px; font-weight:700; line-height:1.35; }
+  .teacher-sidebar-intro { margin-top:5px; color:var(--color-text-muted-light); font-size:11px; }
+  .desktop-chapter-search { display:flex; height:40px; align-items:center; gap:9px; margin-top:20px; border:1px solid var(--color-border-light); border-radius:11px; background:var(--color-surface-light); padding:0 11px; color:var(--color-text-muted-light); }
+  .desktop-chapter-search>span:first-child { flex:none; font-size:18px; line-height:1; }
+  .desktop-chapter-search input { width:100%; min-width:0; border:0; outline:0; background:transparent; color:var(--color-text-main-light); font-size:11px; }
+  .desktop-chapter-search input::placeholder { color:var(--color-text-muted-light); }
+  .mobile-chapter-search { display:none; }
+  .teacher-guide-nav { display:grid; gap:10px; margin-top:16px; }
+  .teacher-module-group summary { display:flex; align-items:center; gap:9px; cursor:pointer; list-style:none; border-bottom:1px solid var(--color-border-light); padding:9px 5px 11px; }
+  .teacher-module-group summary::-webkit-details-marker { display:none; }
+  .teacher-module-number { display:grid; width:31px; height:31px; flex:none; place-items:center; border-radius:10px; background:color-mix(in srgb,var(--color-accent-light) 12%,transparent); color:var(--color-accent-light); font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; }
+  .teacher-module-group summary strong,.teacher-module-group summary small { display:block; }
+  .teacher-module-group summary strong { font-size:11px; line-height:1.4; }
+  .teacher-module-group summary small { margin-top:3px; color:var(--color-text-muted-light); font-size:9px; }
+  .teacher-module-chevron { color:var(--color-text-muted-light); transition:transform .2s; }
+  .teacher-module-group[open] .teacher-module-chevron { transform:rotate(180deg); }
+  .teacher-module-group ul { margin:8px 0 0 12px; border-left:1px solid var(--color-border-light); padding:0 0 0 7px; list-style:none; }
+  .teacher-chapter-link { display:flex; align-items:flex-start; gap:7px; border-radius:8px; padding:8px 7px; color:var(--color-text-muted-light); font-size:10px; line-height:1.4; }
+  .teacher-chapter-link:hover,.teacher-chapter-current { background:color-mix(in srgb,var(--color-accent-light) 8%,transparent); color:var(--color-accent-light); }
+  .teacher-chapter-link span { flex:none; font-variant-numeric:tabular-nums; }
+  .teacher-chapter-link strong { font-weight:600; }
+  .teacher-private-note { display:flex; gap:8px; margin-top:22px; border:1px solid var(--color-border-light); border-radius:12px; padding:10px; color:var(--color-text-muted-light); font-size:10px; line-height:1.5; }
+  .teacher-private-note span { color:var(--color-accent-light); }
+  .teacher-module-kicker { display:inline-flex; align-items:center; gap:9px; color:var(--color-text-muted-light); font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
+  .teacher-module-kicker span { width:25px; height:1px; background:var(--color-border-light); }
+  .chapter-eyebrow { margin-top:30px; }
+  .chapter-title { margin-top:8px; font-family:'Orbitron',sans-serif; font-size:clamp(24px,4vw,42px); font-weight:700; line-height:1.2; }
+  .teacher-chapter-meta { display:flex; flex-wrap:wrap; gap:10px 18px; margin-top:18px; color:var(--color-text-muted-light); font-size:10px; text-transform:uppercase; letter-spacing:.08em; }
+  .teacher-chapter-meta span+span { border-left:1px solid var(--color-border-light); padding-left:18px; }
+  .teacher-chapter-pagination { display:flex; justify-content:space-between; gap:12px; margin-top:48px; border-top:1px solid var(--color-border-light); padding-top:18px; }
+  .teacher-previous,.teacher-next { display:flex; max-width:48%; align-items:center; gap:10px; border:1px solid var(--color-border-light); border-radius:13px; padding:10px 13px; color:var(--color-text-main-light); }
+  .teacher-previous span:last-child { display:grid; gap:3px; }
+  .teacher-previous small,.teacher-next .teacher-eyebrow { color:var(--color-text-muted-light); font-size:9px; }
+  .teacher-previous strong,.teacher-next strong { font-size:11px; }
+  .teacher-next { margin-left:auto; justify-content:space-between; border-color:var(--color-accent-light); background:var(--color-accent-light); color:white; }
+  .teacher-next .teacher-eyebrow { color:white; }
+  .teacher-reader-right-inner { top:84px; }
+  .right-title { margin-top:8px; font-family:'Orbitron',sans-serif; font-size:15px; font-weight:700; }
+  .right-copy { margin-top:8px; color:var(--color-text-muted-light); font-size:11px; line-height:1.6; }
+  .teacher-guide-info { display:grid; gap:5px; margin-top:18px; border-radius:13px; background:color-mix(in srgb,var(--color-accent-light) 6%,var(--color-surface-light)); padding:13px; }
+  .teacher-guide-info span { margin-top:7px; color:var(--color-text-muted-light); font-size:9px; font-weight:800; letter-spacing:.12em; }
+  .teacher-guide-info strong { font-size:11px; line-height:1.4; }
+  .teacher-source-link { display:inline-flex; align-items:center; gap:8px; margin-top:15px; color:var(--color-accent-light); font-size:11px; font-weight:700; }
+  .teacher-reader-empty { display:grid; min-height:55vh; align-content:center; gap:12px; }
+  .teacher-reader-empty h2 { font-family:'Orbitron',sans-serif; font-size:25px; font-weight:700; }
+  .teacher-reader-empty p:not(.teacher-eyebrow),.teacher-reader-empty a { color:var(--color-text-muted-light); font-size:12px; }
+  .teacher-reader-empty a { color:var(--color-accent-light); font-weight:700; }
+  .teacher-reader-empty-note,.teacher-reader-hint { border:1px dashed var(--color-border-light); border-radius:13px; padding:14px; color:var(--color-text-muted-light); font-size:11px; line-height:1.6; }
+  :global(.dark) .teacher-sidebar-intro,:global(.dark) .teacher-module-group summary small,:global(.dark) .teacher-chapter-link,:global(.dark) .teacher-private-note,:global(.dark) .teacher-module-kicker,:global(.dark) .teacher-chapter-meta,:global(.dark) .teacher-previous small,:global(.dark) .right-copy,:global(.dark) .teacher-guide-info span,:global(.dark) .teacher-reader-empty-note,:global(.dark) .teacher-reader-hint,:global(.dark) .teacher-reader-empty p:not(.teacher-eyebrow),:global(.dark) .teacher-reader-empty a { color:var(--color-text-muted-dark); }
+  :global(.dark) .teacher-reader-left,:global(.dark) .teacher-reader-right { border-color:var(--color-border-dark); }
+  :global(.dark) .desktop-chapter-search { border-color:var(--color-border-dark); background:var(--color-surface-dark); color:var(--color-text-muted-dark); }
+  :global(.dark) .desktop-chapter-search input { color:var(--color-text-main-dark); }
+  :global(.dark) .teacher-module-group summary,:global(.dark) .teacher-module-group ul,:global(.dark) .teacher-private-note,:global(.dark) .teacher-chapter-meta span+span,:global(.dark) .teacher-chapter-pagination { border-color:var(--color-border-dark); }
+  :global(.dark) .teacher-previous { border-color:var(--color-border-dark); color:var(--color-text-main-dark); }
+  :global(.dark) .teacher-guide-info { background:color-mix(in srgb,var(--color-accent-dark) 8%,var(--color-surface-dark)); }
+  :global(.dark) .teacher-reader-empty-note,:global(.dark) .teacher-reader-hint { border-color:var(--color-border-dark); }
+  @media(max-width:1199px) { .teacher-reader { grid-template-columns:250px minmax(0,1fr); } .teacher-reader-right { display:none; } }
+  @media(max-width:900px) {
+    .teacher-reader { display:block; }
+    .teacher-reader-left { border-right:0; border-bottom:1px solid var(--color-border-light); }
+    .teacher-reader-left-inner { position:static; max-height:none; overflow:visible; padding:15px 18px; }
+    .teacher-reader-left-inner>.teacher-eyebrow,.teacher-sidebar-intro { display:none; }
+    .teacher-discipline-title { display:inline-block; margin:12px 0 0; font-size:13px; }
+    .desktop-chapter-search { display:none; }
+    .mobile-chapter-search { display:block; position:relative; margin-top:12px; }
+    #mobile-search-toggle { display:flex; width:100%; align-items:center; gap:10px; border:1px solid var(--color-border-light); border-radius:12px; background:var(--color-surface-light); padding:10px 12px; color:var(--color-text-muted-light); text-align:left; font-size:13px; }
+    #mobile-search-toggle>span:first-child { font-size:18px; }
+    .mobile-search-chevron { margin-left:auto; }
+    .mobile-search-panel { position:absolute; z-index:20; top:calc(100% + 7px); right:0; left:0; border:1px solid var(--color-border-light); border-radius:14px; background:var(--color-surface-light); box-shadow:0 14px 36px #0002; padding:8px; }
+    .mobile-search-input-row { display:flex; align-items:center; gap:8px; }
+    .mobile-search-input-row input { width:100%; min-width:0; border:1px solid var(--color-border-light); border-radius:9px; background:transparent; padding:10px; font-size:16px; }
+    .mobile-search-input-row button { padding:4px 9px; color:var(--color-text-muted-light); font-size:21px; }
+    .mobile-search-caption { padding:10px 8px 4px; color:var(--color-text-muted-light); font-size:10px; }
+    .mobile-search-results { max-height:min(42vh,360px); overflow:auto; padding:3px; overscroll-behavior:contain; }
+    .mobile-search-results>a { display:flex; align-items:center; justify-content:space-between; gap:12px; border-radius:9px; padding:10px 8px; }
+    .mobile-search-results>a:active { background:color-mix(in srgb,var(--color-accent-light) 10%,transparent); }
+    .mobile-search-results>a span:first-child { display:grid; gap:3px; }
+    .mobile-search-results strong { font-size:12px; }
+    .mobile-search-results small { color:var(--color-text-muted-light); font-size:10px; }
+    .mobile-search-results>a>span:last-child { color:var(--color-accent-light); }
+    .mobile-search-results>p { padding:9px; color:var(--color-text-muted-light); font-size:11px; }
+    :global(.dark) #mobile-search-toggle,:global(.dark) .mobile-search-panel { border-color:var(--color-border-dark); background:var(--color-surface-dark); color:var(--color-text-muted-dark); }
+    :global(.dark) .mobile-search-input-row input { border-color:var(--color-border-dark); color:var(--color-text-main-dark); }
+    :global(.dark) .mobile-search-caption,:global(.dark) .mobile-search-results small,:global(.dark) .mobile-search-results>p { color:var(--color-text-muted-dark); }
+    .teacher-guide-nav { display:grid; grid-template-columns:1fr; gap:2px; max-height:34vh; overflow-y:auto; margin-top:9px; padding:0 2px 4px 0; }
+    .teacher-private-note { display:none; }
+    .teacher-reader-main { padding:28px 19px; }
+    .chapter-title { font-size:clamp(23px,7vw,34px); }
+  }
+</style>
