@@ -116,7 +116,7 @@ const chapterHref = (guideId: string, chapterSlug: string) => `/professor/guias/
     </main>
 
     <aside class="teacher-reader-right"><div class="teacher-reader-right-inner">
-      {activeChapter && selectedGuide ? <><p class="teacher-eyebrow">Planejamento</p><h2 class="right-title">Material de apoio</h2><p class="right-copy">Conteúdo estruturado para leitura no site, separado da área dos alunos.</p><div class="teacher-guide-info"><span>DISCIPLINA</span><strong>{discipline?.name}</strong><span>MÓDULO</span><strong>{selectedGuide.moduleName}</strong><span>CAPÍTULO</span><strong>{activeChapter.chapter_order} de {selectedGuide.chapters.length}</strong></div>{selectedGuide.storage_path && <a class="teacher-source-link" href={`/api/professor/guias/${selectedGuide.id}/arquivo`}><span aria-hidden="true">↓</span> Baixar PDF original</a>}</> : <div class="teacher-reader-hint">Selecione um capítulo para abrir o conteúdo.</div>}
+      {activeChapter && selectedGuide ? <><p class="teacher-eyebrow">Planejamento</p><h2 class="right-title">Material de apoio</h2><p class="right-copy">Conteúdo estruturado para leitura no site, separado da área dos alunos.</p><div class="teacher-guide-info"><span>DISCIPLINA</span><strong>{discipline?.name}</strong><span>MÓDULO</span><strong>{selectedGuide.moduleName}</strong><span>CAPÍTULO</span><strong>{activeChapter.chapter_order} de {selectedGuide.chapters.length}</strong></div></> : <div class="teacher-reader-hint">Selecione um capítulo para abrir o conteúdo.</div>}
     </div></aside>
   </div>
 </BaseLayout>
@@ -276,7 +276,6 @@ const chapterHref = (guideId: string, chapterSlug: string) => `/professor/guias/
   .teacher-guide-info { display:grid; gap:5px; margin-top:18px; border-radius:13px; background:color-mix(in srgb,var(--color-accent-light) 6%,var(--color-surface-light)); padding:13px; }
   .teacher-guide-info span { margin-top:7px; color:var(--color-text-muted-light); font-size:9px; font-weight:800; letter-spacing:.12em; }
   .teacher-guide-info strong { font-size:11px; line-height:1.4; }
-  .teacher-source-link { display:inline-flex; align-items:center; gap:8px; margin-top:15px; color:var(--color-accent-light); font-size:11px; font-weight:700; }
   .teacher-reader-empty { display:grid; min-height:55vh; align-content:center; gap:12px; }
   .teacher-reader-empty h2 { font-family:'Orbitron',sans-serif; font-size:25px; font-weight:700; }
   .teacher-reader-empty p:not(.teacher-eyebrow),.teacher-reader-empty a { color:var(--color-text-muted-light); font-size:12px; }

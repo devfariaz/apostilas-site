@@ -50,6 +50,7 @@ const sameDiscipline = [...databaseNav, ...staticNav].sort((a, b) => a.data.modu
 const formatChapterDate = (value?: string | null) => value ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'America/Sao_Paulo' }).format(new Date(value)) : null;
 const bodyHtml = databaseLesson ? sanitizeHtml(await marked.parse(databaseLesson.body_markdown ?? '')) : '';
 const practiceHtml = databaseLesson ? sanitizeHtml(await marked.parse(databaseLesson.practice_markdown ?? '')) : '';
+const keyIdeaHtml = databaseLesson?.key_idea ? sanitizeHtml(await marked.parseInline(databaseLesson.key_idea)) : '';
 const essentialPoints: { title: string; description: string }[] = Array.isArray(databaseLesson?.essential_points) ? databaseLesson.essential_points : [];
 const chapterIndex = sameDiscipline.findIndex((entry) => entry.id.split('/').at(-1) === lessonId);
 const previousLesson = chapterIndex > 0 ? sameDiscipline[chapterIndex - 1] : null;
@@ -62,7 +63,7 @@ const nextLesson = chapterIndex >= 0 ? sameDiscipline[chapterIndex + 1] : null;
   <div class="mt-8 flex flex-wrap gap-2">{data.tags.map((tag: string) => <a href={`/buscar?tag=${encodeURIComponent(tag)}`} class="rounded-full bg-black/5 px-3 py-1 text-xs hover:bg-accent-light hover:text-white dark:bg-white/10">#{tag}</a>)}</div>
   <nav class="lesson-tabs mt-10 flex gap-6 border-b border-border-light dark:border-border-dark" role="tablist" aria-label="Conteúdo do capítulo"><button type="button" role="tab" aria-selected="true" aria-controls="lesson-reading" id="lesson-tab-reading">Aula</button><button type="button" role="tab" aria-selected="false" aria-controls="lesson-practice" id="lesson-tab-practice">Prática guiada</button></nav>
   <section id="lesson-reading" role="tabpanel" aria-labelledby="lesson-tab-reading">
-    {databaseLesson?.key_idea && <blockquote class="my-8 rounded-2xl bg-surface-light p-6 font-display text-xl font-semibold leading-relaxed dark:bg-surface-dark"><span class="mr-2 text-3xl text-accent-light">“</span>{databaseLesson.key_idea}<span class="text-accent-light">”</span></blockquote>}
+    {keyIdeaHtml && <blockquote class="key-idea my-8 rounded-2xl bg-surface-light p-6 font-display text-xl font-semibold leading-relaxed dark:bg-surface-dark"><span class="mr-2 text-3xl text-accent-light">“</span><Fragment set:html={keyIdeaHtml} /><span class="text-accent-light">”</span></blockquote>}
     <article class="prose prose-lg mt-8 max-w-none prose-headings:font-display prose-headings:font-semibold prose-a:text-accent-light dark:prose-invert">{databaseLesson ? <Fragment set:html={bodyHtml} /> : Content && <Content />}</article>
     {essentialPoints.length > 0 && <section class="my-10 rounded-2xl bg-highlight-light p-6 text-text-main-light dark:bg-highlight-dark"><p class="text-xs font-bold uppercase tracking-[.18em] text-accent-light">Hora de memorizar</p><h2 class="mt-2 font-display text-3xl font-semibold">O essencial deste capítulo</h2><ol class="mt-5 grid gap-4 sm:grid-cols-2">{essentialPoints.map((point, index) => <li class="flex gap-3"><span class="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-black/30 text-xs">{index + 1}</span><span><strong class="block text-sm">{point.title}</strong><small class="mt-1 block leading-relaxed">{point.description}</small></span></li>)}</ol></section>}
   </section>
