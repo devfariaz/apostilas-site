@@ -60,6 +60,11 @@ const { data: { user } } = await supabase.auth.getUser();
       <p class="mt-2 max-w-3xl text-sm text-text-muted-light dark:text-text-muted-dark">A pessoa precisa criar uma conta no site primeiro. Informe o mesmo e-mail cadastrado para conceder acesso ao painel administrativo.</p>
       <form id="administrator-form" class="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"><label class="block text-sm font-semibold">E-mail da conta<input id="administrator-email" type="email" required class="admin-input" placeholder="nome@instituicao.com.br" /></label><button id="administrator-add" class="admin-primary" type="submit">Conceder acesso administrativo</button></form>
       <p id="administrator-status" class="mt-3 text-sm" aria-live="polite"></p><div id="administrator-list" class="mt-5 grid gap-3 md:grid-cols-2"></div>
+      <div class="my-8 border-t border-border-light dark:border-border-dark"></div>
+      <p class="text-xs font-bold uppercase tracking-[.18em] text-accent-light">Acesso sem painel</p><h3 class="mt-1 font-display text-xl font-semibold">Professores eventuais</h3>
+      <p class="mt-2 max-w-3xl text-sm text-text-muted-light dark:text-text-muted-dark">O professor precisa criar uma conta no seu site. Ao liberar o e-mail cadastrado, ele poderá consultar os guias e suas notas pessoais, sem acessar o painel administrativo nem as apostilas dos alunos por esse acesso.</p>
+      <form id="teacher-access-form" class="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"><label class="block text-sm font-semibold">E-mail da conta<input id="teacher-access-email" type="email" required class="admin-input" placeholder="professor@instituicao.com.br" /></label><button id="teacher-access-add" class="admin-primary" type="submit">Liberar acesso aos guias</button></form>
+      <p id="teacher-access-status" class="mt-3 text-sm" aria-live="polite"></p><div id="teacher-access-list" class="mt-5 grid gap-3 md:grid-cols-2"></div>
     </section>
   </main>
 </BaseLayout>
@@ -189,7 +194,7 @@ const { data: { user } } = await supabase.auth.getUser();
   const savedTab = tabs.find((tab) => tab.id === localStorage.getItem('admin-active-tab'));
   if (savedTab) activateTab(savedTab);
   tabs.forEach((tab, index) => {
-    tab.addEventListener('click', () => { activateTab(tab); if (tab.id === 'tab-administrators') void loadAdministratorList(); });
+    tab.addEventListener('click', () => { activateTab(tab); if (tab.id === 'tab-administrators') { void loadAdministratorList(); void loadTeacherAccessList(); } });
     tab.addEventListener('keydown', (event) => {
       let nextIndex = index;
       if (event.key === 'ArrowRight') nextIndex = (index + 1) % tabs.length;
@@ -254,6 +259,56 @@ const { data: { user } } = await supabase.auth.getUser();
       await loadAdministratorList();
     } catch (error) {
       setStatus('#administrator-status', error instanceof Error ? error.message : 'Não foi possível atualizar o acesso.', true);
+    } finally {
+      button.disabled = false;
+    }
+  }
+  async function loadTeacherAccessList() {
+    const list = $('#teacher-access-list');
+    list.replaceChildren();
+    try {
+      const result = await api('/api/admin/teachers');
+      (result.teachers as Row[]).forEach((person) => {
+        const card = document.createElement('article');
+        card.className = 'flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border-light p-4 dark:border-border-dark';
+        const details = document.createElement('div');
+        details.className = 'min-w-0';
+        const name = document.createElement('strong');
+        name.className = 'block break-all text-sm';
+        name.textContent = person.full_name || person.email;
+        const email = document.createElement('span');
+        email.className = 'mt-1 block break-all text-xs text-text-muted-light dark:text-text-muted-dark';
+        email.textContent = person.email;
+        details.append(name, email);
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'admin-secondary';
+        remove.textContent = 'Revogar acesso';
+        remove.addEventListener('click', () => void setTeacherAccess(person.email, false));
+        card.append(details, remove);
+        list.append(card);
+      });
+      if (!result.teachers.length) {
+        const empty = document.createElement('p');
+        empty.className = 'rounded-2xl border border-dashed border-border-light p-4 text-sm text-text-muted-light dark:border-border-dark dark:text-text-muted-dark';
+        empty.textContent = 'Nenhum professor eventual com acesso no momento.';
+        list.append(empty);
+      }
+    } catch (error) {
+      setStatus('#teacher-access-status', error instanceof Error ? error.message : 'Não foi possível carregar os professores.', true);
+    }
+  }
+  async function setTeacherAccess(email: string, grantAccess: boolean) {
+    if (grantAccess && !confirm(`Liberar os guias do professor para ${email}? A conta poderá ler todos os guias e salvar notas pessoais, sem receber acesso ao painel administrativo.`)) return;
+    const button = $('#teacher-access-add') as HTMLButtonElement;
+    button.disabled = true;
+    try {
+      const result = await api('/api/admin/teachers', 'POST', { email, grant_access: grantAccess });
+      setStatus('#teacher-access-status', result.message);
+      if (grantAccess) ($('#teacher-access-email') as HTMLInputElement).value = '';
+      await loadTeacherAccessList();
+    } catch (error) {
+      setStatus('#teacher-access-status', error instanceof Error ? error.message : 'Não foi possível atualizar o acesso.', true);
     } finally {
       button.disabled = false;
     }
@@ -443,6 +498,7 @@ const { data: { user } } = await supabase.auth.getUser();
   $('#student-edit-year').addEventListener('change', (event) => { const year = (event.currentTarget as HTMLSelectElement).value; const preset = yearDisciplineDefaults[year]; if (!preset) return; $('#student-edit-disciplines').querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach((checkbox) => { checkbox.checked = preset.includes(checkbox.value); }); });
   $('#student-edit-save').addEventListener('click', async () => { if (!editingStudent) return; const button = $('#student-edit-save') as HTMLButtonElement; const year = ($('#student-edit-year') as HTMLSelectElement).value; const discipline_slugs = [...$('#student-edit-disciplines').querySelectorAll<HTMLInputElement>('input:checked')].map((input) => input.value); button.disabled = true; button.textContent = 'Salvando…'; try { await api('/api/admin/students', 'PUT', { id: editingStudent.id, year_level: year ? Number(year) : null, discipline_slugs }); $('#student-edit-dialog').close(); await load(); } catch (error) { alert(error instanceof Error ? error.message : 'Não foi possível salvar o vínculo.'); } finally { button.disabled = false; button.textContent = 'Salvar vínculo'; } });
   $('#administrator-form').addEventListener('submit', (event) => { event.preventDefault(); const email = ($('#administrator-email') as HTMLInputElement).value.trim(); if (email) void setAdministrator(email, true); });
+  $('#teacher-access-form').addEventListener('submit', (event) => { event.preventDefault(); const email = ($('#teacher-access-email') as HTMLInputElement).value.trim(); if (email) void setTeacherAccess(email, true); });
   document.querySelectorAll<HTMLButtonElement>('[data-new]').forEach((button) => button.addEventListener('click', () => { const dialog = document.getElementById(button.dataset.new!) as HTMLDialogElement; const form = dialog.querySelector('form')!; form.reset(); (form.elements.namedItem('id') as HTMLInputElement).value = ''; if (form.id === 'lesson-form') { updateModuleOptions(); ($('#lesson-dialog [name="published"]') as HTMLInputElement).checked = true; } dialog.showModal(); }));
   document.querySelectorAll<HTMLButtonElement>('[data-close-dialog]').forEach((button) => button.addEventListener('click', () => button.closest('dialog')?.close()));
   document.querySelectorAll<HTMLDialogElement>('.admin-dialog').forEach((dialog) => dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); }));

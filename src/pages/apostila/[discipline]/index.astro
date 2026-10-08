@@ -576,6 +576,7 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
   }
   @media print {
     @page { size:A4; margin:18mm 16mm; }
+    body::after { content:"PROFESSOR DEIVID NOBRE · APOSTILAS"; position:fixed; top:50%; left:50%; width:100%; transform:translate(-50%,-50%) rotate(-32deg); color:#087f9b; font-family:'Orbitron',sans-serif; font-size:25pt; font-weight:700; letter-spacing:.12em; text-align:center; white-space:nowrap; opacity:.12; z-index:9999; pointer-events:none; }
     :global(.site-header),.reader-left,.reader-right,.chapter-tabs,.download-chapter-pdf,.next-chapter,.previous-chapter { display:none!important; }
     .reader-shell { display:block!important; max-width:none!important; margin:0!important; padding:0!important; }
     .reader-main { width:auto!important; }

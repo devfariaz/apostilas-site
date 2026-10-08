@@ -1,10 +1,10 @@
 import type { APIRoute } from 'astro';
-import { requireAdmin } from '../../../lib/admin';
+import { requireTeacher } from '../../../lib/admin';
 
 export const prerender = false;
 
 export const PUT: APIRoute = async ({ request, cookies }) => {
-  const auth = await requireAdmin(cookies, request);
+  const auth = await requireTeacher(cookies, request);
   if (!auth.user) return Response.json({ error: auth.error }, { status: auth.status });
 
   let body: unknown;

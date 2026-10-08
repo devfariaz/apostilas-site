@@ -4,8 +4,9 @@ import { createSupabaseServerClient } from './lib/supabase';
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
   const isApostila = pathname === '/apostila' || pathname.startsWith('/apostila/');
-  const isAdmin = pathname === '/admin' || pathname.startsWith('/admin/') || pathname === '/api/admin' || pathname.startsWith('/api/admin/') || pathname === '/professor' || pathname.startsWith('/professor/') || pathname === '/api/professor' || pathname.startsWith('/api/professor/');
-  if (!isApostila && !isAdmin) return next();
+  const isAdminPath = pathname === '/admin' || pathname.startsWith('/admin/') || pathname === '/api/admin' || pathname.startsWith('/api/admin/');
+  const isTeacherPath = pathname === '/professor' || pathname.startsWith('/professor/') || pathname === '/api/professor' || pathname.startsWith('/api/professor/');
+  if (!isApostila && !isAdminPath && !isTeacherPath) return next();
 
   const apiRequest = pathname === '/api/admin' || pathname.startsWith('/api/admin/') || pathname === '/api/professor' || pathname.startsWith('/api/professor/');
   const reject = (status: number, message: string) => apiRequest
@@ -17,10 +18,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) return reject(401, 'Autenticação necessária.');
 
-    const { data: profile, error: profileError } = await supabase.from('profiles').select('is_active,role').eq('id', user.id).maybeSingle();
+    const { data: profile, error: profileError } = await supabase.from('profiles').select('is_active,role,can_access_teacher_guides').eq('id', user.id).maybeSingle();
     if (profileError || !profile?.is_active) return reject(403, 'A conta aguarda aprovação.');
-    if (isAdmin && profile.role !== 'admin') return reject(403, 'Acesso administrativo necessário.');
+    if (isAdminPath && profile.role !== 'admin') return reject(403, 'Acesso administrativo necessário.');
+    if (isTeacherPath && profile.role !== 'admin' && !profile.can_access_teacher_guides) return reject(403, 'Acesso à área do professor necessário.');
     if (isApostila && profile.role !== 'admin') {
+      if (profile.role !== 'aluno') return context.redirect('/?acesso=restrito');
       const segments = pathname.split('/').filter(Boolean);
       const discipline = segments[1];
       if (discipline) {

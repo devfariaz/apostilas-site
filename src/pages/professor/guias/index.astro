@@ -5,13 +5,15 @@ import { createSupabaseServerClient } from '../../../lib/supabase';
 export const prerender = false;
 
 const supabase = createSupabaseServerClient(Astro.cookies, Astro.request);
-const [authResult, guideResult, chapterResult, disciplineResult] = await Promise.all([
+const [authResult, profileResult, guideResult, chapterResult, disciplineResult] = await Promise.all([
   supabase.auth.getUser(),
+  supabase.from('profiles').select('role').maybeSingle(),
   supabase.from('teacher_guides').select('id,discipline_slug,module_id,title'),
   supabase.from('teacher_guide_chapters').select('id,guide_id'),
   supabase.from('disciplines').select('slug,name,description').order('sort_order'),
 ]);
 const user = authResult.data.user;
+const isAdmin = profileResult.data?.role === 'admin';
 const loadError = Boolean(guideResult.error || chapterResult.error || disciplineResult.error);
 const chapters = chapterResult.data ?? [];
 const guideCards = (disciplineResult.data ?? []).map((discipline) => {
@@ -26,7 +28,7 @@ const guideCards = (disciplineResult.data ?? []).map((discipline) => {
 
 <BaseLayout title="Guias do professor — Professor Deivid Nobre - Apostilas" description="Biblioteca privada de guias e materiais do professor." user={user}>
   <main class="teacher-hub">
-    <a href="/admin" class="teacher-hub-back">← Painel administrativo</a>
+    {isAdmin && <a href="/admin" class="teacher-hub-back">← Painel administrativo</a>}
     <header class="teacher-hub-header">
       <p class="teacher-eyebrow">Área exclusiva do professor</p>
       <h1>Guias de ensino</h1>

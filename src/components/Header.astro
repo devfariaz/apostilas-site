@@ -8,6 +8,7 @@ const displayName = user?.user_metadata?.full_name || user?.email || 'Conta';
 const userInitials = String(displayName).split(/\s+/).slice(0, 2).map((part: string) => part[0]?.toLocaleUpperCase('pt-BR')).join('');
 let subjects: { slug: string; name: string; description?: string | null }[] = [...disciplines];
 let isAdmin = false;
+let canAccessTeacherGuides = false;
 let hasSession = Boolean(user);
 try {
   const client = createSupabaseServerClient(Astro.cookies, Astro.request);
@@ -16,8 +17,9 @@ try {
   const result = await client.from('disciplines').select('slug,name,description').eq('active', true).order('sort_order').order('name');
   if (result.data?.length) subjects = result.data;
   if (sessionUser) {
-    const profile = await client.from('profiles').select('role').eq('id', sessionUser.id).maybeSingle();
+    const profile = await client.from('profiles').select('role,can_access_teacher_guides').eq('id', sessionUser.id).maybeSingle();
     isAdmin = profile.data?.role === 'admin';
+    canAccessTeacherGuides = isAdmin || Boolean(profile.data?.can_access_teacher_guides);
     if (!isAdmin) {
       const assignments = await client.from('student_disciplines').select('discipline_slug').eq('user_id', sessionUser.id);
       const assignedSlugs = new Set((assignments.data ?? []).map((row) => row.discipline_slug));
@@ -46,7 +48,7 @@ const yearGroups = [
       </details>)}
     </nav>
     <div class="header-tools ml-auto flex min-w-0 items-center gap-1.5 sm:gap-2"><form action="/buscar" method="get" class="hidden w-56 shrink items-center gap-2 rounded-full border border-border-light bg-surface-light px-3 py-2.5 transition focus-within:border-accent-light focus-within:ring-2 focus-within:ring-accent-light/15 md:flex xl:w-96 dark:border-border-dark dark:bg-surface-dark"><span aria-hidden="true" class="text-lg leading-none text-text-muted-light">⌕</span><input aria-label="Buscar apostilas por assunto ou tag" name="q" class="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-text-muted-light" placeholder="Buscar na apostila" /><kbd class="rounded border border-border-light px-1.5 text-[10px] text-text-muted-light dark:border-border-dark dark:text-text-muted-dark">↵</kbd></form><a href="/buscar" class="search-shortcut rounded-full p-2 text-sm hover:bg-black/5 md:hidden dark:hover:bg-white/10" aria-label="Buscar">⌕</a><ThemeToggle />
-      {user ? <details class="profile-menu relative"><summary aria-label={displayName} class="flex max-w-40 cursor-pointer list-none items-center gap-2 rounded-full p-1.5 text-sm hover:bg-black/5 dark:hover:bg-white/10"><span class="profile-initials grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent-light text-xs font-bold text-white sm:hidden">{userInitials}</span><span class="hidden max-w-32 truncate px-2 sm:inline">{displayName}</span></summary><div class="absolute right-0 mt-2 w-52 rounded-2xl border border-border-light bg-surface-light p-3 shadow-xl dark:border-border-dark dark:bg-surface-dark"><p class="truncate px-2 py-1 text-xs text-text-muted-light dark:text-text-muted-dark">{user.email}</p>{isAdmin && <><a href="/admin" class="block rounded-xl px-2 py-2 text-sm hover:bg-black/5 dark:hover:bg-white/10">Painel administrativo</a><a href="/professor/guias" class="block rounded-xl px-2 py-2 text-sm hover:bg-black/5 dark:hover:bg-white/10">Guias do professor</a></>}<form action="/api/auth/logout" method="post"><button class="mt-2 w-full rounded-xl px-2 py-2 text-left text-sm hover:bg-black/5 dark:hover:bg-white/10">Sair da conta</button></form></div></details> : <a class="rounded-full bg-accent-light px-3 py-2 text-sm font-semibold text-white hover:opacity-90 sm:px-4" href="/login">Entrar</a>}
+      {user ? <details class="profile-menu relative"><summary aria-label={displayName} class="flex max-w-40 cursor-pointer list-none items-center gap-2 rounded-full p-1.5 text-sm hover:bg-black/5 dark:hover:bg-white/10"><span class="profile-initials grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent-light text-xs font-bold text-white sm:hidden">{userInitials}</span><span class="hidden max-w-32 truncate px-2 sm:inline">{displayName}</span></summary><div class="absolute right-0 mt-2 w-52 rounded-2xl border border-border-light bg-surface-light p-3 shadow-xl dark:border-border-dark dark:bg-surface-dark"><p class="truncate px-2 py-1 text-xs text-text-muted-light dark:text-text-muted-dark">{user.email}</p>{isAdmin && <a href="/admin" class="block rounded-xl px-2 py-2 text-sm hover:bg-black/5 dark:hover:bg-white/10">Painel administrativo</a>}{canAccessTeacherGuides && <a href="/professor/guias" class="block rounded-xl px-2 py-2 text-sm hover:bg-black/5 dark:hover:bg-white/10">Guias do professor</a>}<form action="/api/auth/logout" method="post"><button class="mt-2 w-full rounded-xl px-2 py-2 text-left text-sm hover:bg-black/5 dark:hover:bg-white/10">Sair da conta</button></form></div></details> : <a class="rounded-full bg-accent-light px-3 py-2 text-sm font-semibold text-white hover:opacity-90 sm:px-4" href="/login">Entrar</a>}
     </div>
   </div>
   <nav id="mobile-year-nav" class="year-nav mobile-year-nav mx-auto hidden max-w-[1440px] flex-col gap-2 px-3 pb-3 text-sm text-text-muted-light sm:px-5 lg:hidden dark:text-text-muted-dark" aria-label="Disciplinas por ano" hidden>

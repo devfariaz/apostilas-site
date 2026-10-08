@@ -1,10 +1,12 @@
 import type { APIRoute } from 'astro';
-import { createSupabaseServerClient } from '../../../../../lib/supabase';
+import { requireTeacher } from '../../../../../lib/admin';
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ params, cookies, request, redirect }) => {
-  const supabase = createSupabaseServerClient(cookies, request);
+  const auth = await requireTeacher(cookies, request);
+  if (!auth.user) return new Response(auth.error, { status: auth.status });
+  const supabase = auth.supabase;
   const { data: guide, error: guideError } = await supabase
     .from('teacher_guides')
     .select('storage_path')
