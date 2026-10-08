@@ -14,6 +14,7 @@ const { data: { user } } = await supabase.auth.getUser();
       <button id="tab-lessons" class="admin-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-lessons" tabindex="-1"><span>03</span>Capítulos</button>
       <button id="tab-teacher-guides" class="admin-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-teacher-guides" tabindex="-1"><span>04</span>Guias do professor</button>
       <button id="tab-students" class="admin-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-students" tabindex="-1"><span>05</span>Aprovações</button>
+      <button id="tab-administrators" class="admin-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-administrators" tabindex="-1"><span>06</span>Administradores</button>
     </nav>
     <div class="mt-6">
       <section id="panel-disciplines" class="admin-panel max-w-3xl rounded-3xl border border-border-light bg-surface-light p-6 dark:border-border-dark dark:bg-surface-dark" role="tabpanel" aria-labelledby="tab-disciplines" tabindex="0">
@@ -54,6 +55,12 @@ const { data: { user } } = await supabase.auth.getUser();
       <div class="mt-4 flex flex-wrap gap-2" id="student-filters" aria-label="Filtrar alunos"><button type="button" data-filter="all" class="admin-filter">Todos</button><button type="button" data-filter="rm" class="admin-filter">RM</button><button type="button" data-filter="pending" class="admin-filter">Aguardando aprovação</button><button type="button" data-filter="missing-assignment" class="admin-filter">Sem ano ou disciplinas</button><button type="button" data-filter="year-1" class="admin-filter">1º ano</button><button type="button" data-filter="year-2" class="admin-filter">2º ano</button><button type="button" data-filter="year-3" class="admin-filter">3º ano</button><button id="select-visible" type="button" class="admin-filter">Selecionar visíveis</button><button id="clear-selection" type="button" class="admin-filter">Limpar seleção</button></div>
       <p id="students-status" class="mt-3 text-sm" aria-live="polite"></p><div id="student-list" class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3"></div>
       <dialog id="student-edit-dialog" class="admin-dialog student-edit-dialog"><div class="admin-dialog-head"><div><p class="text-xs font-bold uppercase tracking-widest text-accent-light">Editar aluno</p><h3 id="student-edit-name" class="mt-1 font-display text-2xl font-semibold">Vínculo escolar</h3><p id="student-edit-email" class="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark"></p></div><button type="button" class="admin-close" data-close-dialog aria-label="Fechar">✕</button></div><label class="mt-5 block text-sm font-semibold" for="student-edit-year">Ano escolar<select id="student-edit-year" class="admin-input"><option value="">Selecione o ano</option><option value="1">1º ano</option><option value="2">2º ano</option><option value="3">3º ano</option></select></label><p class="mt-4 text-sm font-semibold">Disciplinas autorizadas</p><p class="mt-1 text-xs text-text-muted-light dark:text-text-muted-dark">Ao trocar o ano, as disciplinas sugeridas são atualizadas. Você pode ajustar a seleção.</p><div id="student-edit-disciplines" class="mt-3 grid gap-2 sm:grid-cols-2"></div><div class="mt-5 flex justify-end gap-2"><button type="button" class="admin-secondary" data-close-dialog>Cancelar</button><button type="button" id="student-edit-save" class="admin-primary">Salvar vínculo</button></div></dialog></section>
+    <section id="panel-administrators" class="admin-panel max-w-4xl rounded-3xl border border-border-light bg-surface-light p-6 dark:border-border-dark dark:bg-surface-dark" role="tabpanel" aria-labelledby="tab-administrators" tabindex="0" hidden>
+      <p class="text-xs font-bold uppercase tracking-[.18em] text-accent-light">Gestão de acessos</p><h2 class="mt-1 font-display text-2xl font-semibold">Administradores</h2>
+      <p class="mt-2 max-w-3xl text-sm text-text-muted-light dark:text-text-muted-dark">A pessoa precisa criar uma conta no site primeiro. Informe o mesmo e-mail cadastrado para conceder acesso ao painel administrativo.</p>
+      <form id="administrator-form" class="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"><label class="block text-sm font-semibold">E-mail da conta<input id="administrator-email" type="email" required class="admin-input" placeholder="nome@instituicao.com.br" /></label><button id="administrator-add" class="admin-primary" type="submit">Conceder acesso administrativo</button></form>
+      <p id="administrator-status" class="mt-3 text-sm" aria-live="polite"></p><div id="administrator-list" class="mt-5 grid gap-3 md:grid-cols-2"></div>
+    </section>
   </main>
 </BaseLayout>
 <style>
@@ -176,7 +183,7 @@ const { data: { user } } = await supabase.auth.getUser();
   const savedTab = tabs.find((tab) => tab.id === localStorage.getItem('admin-active-tab'));
   if (savedTab) activateTab(savedTab);
   tabs.forEach((tab, index) => {
-    tab.addEventListener('click', () => activateTab(tab));
+    tab.addEventListener('click', () => { activateTab(tab); if (tab.id === 'tab-administrators') void loadAdministratorList(); });
     tab.addEventListener('keydown', (event) => {
       let nextIndex = index;
       if (event.key === 'ArrowRight') nextIndex = (index + 1) % tabs.length;
@@ -192,6 +199,58 @@ const { data: { user } } = await supabase.auth.getUser();
   async function api(path: string, method = 'GET', body?: unknown) {
     const response = await fetch(path, { method, headers: body ? { 'content-type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined });
     const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Não foi possível concluir a operação.'); return data;
+  }
+  async function loadAdministratorList() {
+    const list = $('#administrator-list');
+    list.replaceChildren();
+    try {
+      const result = await api('/api/admin/administrators');
+      (result.administrators as Row[]).forEach((person) => {
+        const card = document.createElement('article');
+        card.className = 'flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border-light p-4 dark:border-border-dark';
+        const details = document.createElement('div');
+        details.className = 'min-w-0';
+        const name = document.createElement('strong');
+        name.className = 'block break-all text-sm';
+        name.textContent = person.full_name || person.email;
+        const email = document.createElement('span');
+        email.className = 'mt-1 block break-all text-xs text-text-muted-light dark:text-text-muted-dark';
+        email.textContent = person.email;
+        details.append(name, email);
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'admin-danger';
+        remove.textContent = 'Remover acesso';
+        remove.disabled = person.id === result.currentUserId;
+        remove.title = remove.disabled ? 'Você não pode remover seu próprio acesso.' : 'Rebaixar esta conta para aluno.';
+        remove.addEventListener('click', () => void setAdministrator(person.email, false));
+        card.append(details, remove);
+        list.append(card);
+      });
+      if (!result.administrators.length) {
+        const empty = document.createElement('p');
+        empty.className = 'rounded-2xl border border-dashed border-border-light p-4 text-sm text-text-muted-light dark:border-border-dark dark:text-text-muted-dark';
+        empty.textContent = 'Nenhuma conta administrativa encontrada.';
+        list.append(empty);
+      }
+    } catch (error) {
+      setStatus('#administrator-status', error instanceof Error ? error.message : 'Não foi possível carregar os administradores.', true);
+    }
+  }
+  async function setAdministrator(email: string, makeAdmin: boolean) {
+    if (makeAdmin && !confirm(`Conceder acesso administrativo a ${email}? Essa pessoa poderá alterar conteúdos e acessos de alunos.`)) return;
+    const button = $('#administrator-add') as HTMLButtonElement;
+    button.disabled = true;
+    try {
+      const result = await api('/api/admin/administrators', 'POST', { email, make_admin: makeAdmin });
+      setStatus('#administrator-status', result.message);
+      if (makeAdmin) ($('#administrator-email') as HTMLInputElement).value = '';
+      await loadAdministratorList();
+    } catch (error) {
+      setStatus('#administrator-status', error instanceof Error ? error.message : 'Não foi possível atualizar o acesso.', true);
+    } finally {
+      button.disabled = false;
+    }
   }
   function setStatus(id: string, text: string, error = false) { const node = $(id); node.textContent = text; node.className = `mt-3 text-sm ${error ? 'text-red-600' : 'text-emerald-700'}`; }
   function fillSelect(select: HTMLSelectElement, rows: Row[], label: (row: Row) => string, value: (row: Row) => string, empty: string) {
@@ -362,6 +421,7 @@ const { data: { user } } = await supabase.auth.getUser();
 
   $('#student-edit-year').addEventListener('change', (event) => { const year = (event.currentTarget as HTMLSelectElement).value; const preset = yearDisciplineDefaults[year]; if (!preset) return; $('#student-edit-disciplines').querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach((checkbox) => { checkbox.checked = preset.includes(checkbox.value); }); });
   $('#student-edit-save').addEventListener('click', async () => { if (!editingStudent) return; const button = $('#student-edit-save') as HTMLButtonElement; const year = ($('#student-edit-year') as HTMLSelectElement).value; const discipline_slugs = [...$('#student-edit-disciplines').querySelectorAll<HTMLInputElement>('input:checked')].map((input) => input.value); button.disabled = true; button.textContent = 'Salvando…'; try { await api('/api/admin/students', 'PUT', { id: editingStudent.id, year_level: year ? Number(year) : null, discipline_slugs }); $('#student-edit-dialog').close(); await load(); } catch (error) { alert(error instanceof Error ? error.message : 'Não foi possível salvar o vínculo.'); } finally { button.disabled = false; button.textContent = 'Salvar vínculo'; } });
+  $('#administrator-form').addEventListener('submit', (event) => { event.preventDefault(); const email = ($('#administrator-email') as HTMLInputElement).value.trim(); if (email) void setAdministrator(email, true); });
   document.querySelectorAll<HTMLButtonElement>('[data-new]').forEach((button) => button.addEventListener('click', () => { const dialog = document.getElementById(button.dataset.new!) as HTMLDialogElement; const form = dialog.querySelector('form')!; form.reset(); (form.elements.namedItem('id') as HTMLInputElement).value = ''; if (form.id === 'lesson-form') updateModuleOptions(); dialog.showModal(); }));
   document.querySelectorAll<HTMLButtonElement>('[data-close-dialog]').forEach((button) => button.addEventListener('click', () => button.closest('dialog')?.close()));
   document.querySelectorAll<HTMLDialogElement>('.admin-dialog').forEach((dialog) => dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); }));
