@@ -1,16 +1,7 @@
 import type { APIRoute } from 'astro';
 import { requireAdmin } from '../../../lib/admin';
+import { generateFruitSequence, normalizeFruitSequence } from '../../../lib/fruit-emojis';
 const slugify = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-const keywordWords = {
-  people: ['ana', 'bia', 'caio', 'davi', 'enzo', 'heloisa', 'igor', 'joao', 'lara', 'luca', 'maia', 'nina', 'otto', 'paula', 'rafa', 'sofia', 'teo', 'vitor', 'yara', 'zoe'],
-  objects: ['cadeira', 'caderno', 'caneca', 'chave', 'colher', 'copo', 'escova', 'espelho', 'janela', 'livro', 'mochila', 'panela', 'papel', 'quadro', 'relogio', 'sapato', 'tesoura', 'toalha', 'vaso', 'violao'],
-  fruits: ['abacaxi', 'ameixa', 'banana', 'caju', 'cereja', 'figo', 'goiaba', 'kiwi', 'laranja', 'maca', 'manga', 'melao', 'morango', 'pera', 'pessego', 'pitaya', 'uva', 'limao', 'coco', 'jabuticaba'],
-  animals: ['abelha', 'aguia', 'baleia', 'cachorro', 'cavalo', 'coelho', 'coruja', 'gato', 'golfinho', 'jacare', 'leao', 'lobo', 'macaco', 'panda', 'pato', 'raposa', 'sapo', 'tigre', 'tucano', 'zebra']
-};
-const createAccessKeyword = () => {
-  const choose = (words: string[]) => words[crypto.getRandomValues(new Uint32Array(1))[0] % words.length];
-  return [choose(keywordWords.people), choose(keywordWords.objects), choose(keywordWords.fruits), choose(keywordWords.animals)].join('-').replace(/\s+/g, '');
-};
 
 export const GET: APIRoute = async ({ cookies, url, request }) => {
   const auth = await requireAdmin(cookies, request); if (!auth.user) return Response.json({ error: auth.error }, { status: auth.status });
@@ -31,6 +22,8 @@ async function save({ request, cookies }: Parameters<APIRoute>[0]) {
   const practice_markdown = typeof body.practice_markdown === 'string' ? body.practice_markdown : '';
   const slug = slugify(typeof body.slug === 'string' && body.slug.trim() ? body.slug : title);
   if (!title || !slug || !discipline_slug || title.length > 180 || body_markdown.length > 200000 || practice_markdown.length > 200000) return Response.json({ error: 'Preencha os campos obrigatórios. Cada conteúdo pode ter até 200 mil caracteres.' }, { status: 400 });
+  const requestedKeyword = typeof body.access_keyword === 'string' ? body.access_keyword.trim() : '';
+  if (requestedKeyword && !body.clear_access_keyword && !normalizeFruitSequence(requestedKeyword)) return Response.json({ error: 'Use uma sequência de quatro emojis de frutas separados por hífen. Exemplo: 🍎-🍌-🍇-🍓.' }, { status: 400 });
   let module = '';
   if (module_id) {
     const result = await auth.supabase.from('modules').select('name').eq('id', module_id).eq('discipline_slug', discipline_slug).maybeSingle();
@@ -71,7 +64,6 @@ async function save({ request, cookies }: Parameters<APIRoute>[0]) {
   const { data, error } = await query.select().single();
   if (error) return Response.json({ error: error.message }, { status: 400 });
   const isCreate = !body.id;
-  const requestedKeyword = typeof body.access_keyword === 'string' ? body.access_keyword.trim() : '';
   let accessKeyword = '';
   if (body.clear_access_keyword === true) {
     const { error: keyError } = await auth.supabase.from('lesson_access_keys').delete().eq('discipline_slug', discipline_slug).eq('lesson_slug', data.slug);
@@ -83,7 +75,7 @@ async function save({ request, cookies }: Parameters<APIRoute>[0]) {
     // preserva a chave atual; uma nova chave só é gravada se foi informada.
     let keySaved = false;
     for (let attempt = 0; attempt < 5 && !keySaved; attempt++) {
-      accessKeyword = requestedKeyword || createAccessKeyword();
+      accessKeyword = requestedKeyword ? normalizeFruitSequence(requestedKeyword)! : generateFruitSequence();
       const { error: keyError } = await auth.supabase.from('lesson_access_keys').upsert({
         discipline_slug,
         lesson_slug: data.slug,

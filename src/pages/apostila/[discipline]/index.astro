@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from '../../../lib/supabase';
 import { disciplines } from '../../../lib/catalog';
 import { marked } from 'marked';
 import sanitizeHtml from 'sanitize-html';
+import { fruitEmojis } from '../../../lib/fruit-emojis';
 export const prerender = false;
 const { discipline } = Astro.params;
 let user = null;
@@ -128,7 +129,7 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
       </section>
       {chapterModules.map((module, moduleIndex) => <section class="module-content" aria-label={module.name} hidden><div class="module-heading"><span class="text-xs font-bold uppercase tracking-widest text-accent-light">Módulo {String(moduleIndex + 1).padStart(2, '0')}</span><span class="mx-2 h-px w-8 bg-border-light dark:bg-border-dark"></span><span class="text-xs font-bold uppercase tracking-widest">{module.name.replace(/^m[oó]dulo\s+[^:]+:\s*/i, '')}</span></div>
         {module.lessons.map((lesson: any) => { const unlocked = unlockedLessons.has(lesson.slug); const navigation = lessonNavigation.get(lesson.slug); const previousLesson = navigation?.previous; const nextLesson = navigation?.next; return <article id={lesson.slug} data-chapter data-lesson={lesson.slug} data-title={lesson.title} data-unlocked={unlocked} class="chapter-article scroll-mt-24" hidden>
-          {!unlocked ? keywordPromptLessons.has(lesson.slug) ? <><div class="chapter-title-row"><span>🔑</span><h2 class="font-display text-2xl font-semibold leading-tight">Este capítulo precisa de uma palavra-chave</h2></div><p class="mt-3 text-sm text-text-muted-light dark:text-text-muted-dark">Peça a palavra ao professor para liberar este capítulo. Depois de liberado, ele continuará disponível na sua conta.</p><form data-unlock-form data-discipline={discipline} data-lesson={lesson.slug} class="keyword-unlock-form"><label class="keyword-unlock-label" for={`${lesson.slug}-keyword`}>Palavra-chave<input id={`${lesson.slug}-keyword`} name="keyword" required maxlength="100" autocomplete="off" autocapitalize="none" class="keyword-unlock-input" placeholder="Digite a palavra informada pelo professor" /></label><button type="submit" class="keyword-unlock-button"><span aria-hidden="true">🔓</span> Liberar capítulo</button><p data-unlock-status class="keyword-unlock-status" aria-live="polite"></p></form></> : <><div class="chapter-title-row"><span>🔒</span><h2 class="font-display text-xl font-semibold leading-tight">Capítulo bloqueado</h2></div><div class="chapter-locked-message"><strong>Conclua os capítulos anteriores para liberar este conteúdo.</strong><p class="mt-2 text-sm">Seu progresso fica salvo automaticamente quando você marca uma aula como concluída.</p></div></> : <>
+          {!unlocked ? keywordPromptLessons.has(lesson.slug) ? <><div class="chapter-title-row"><span>🔑</span><h2 class="font-display text-2xl font-semibold leading-tight">Este capítulo precisa de uma palavra-chave</h2></div><p class="mt-3 text-sm text-text-muted-light dark:text-text-muted-dark">Peça a sequência de frutas ao professor para liberar este capítulo. Depois de liberado, ele continuará disponível na sua conta.</p><form data-unlock-form data-discipline={discipline} data-lesson={lesson.slug} class="keyword-unlock-form"><fieldset class="fruit-access-fieldset"><legend>Selecione os quatro emojis na ordem informada pelo professor</legend><div class="fruit-sequence-slots" aria-label="Sequência escolhida">{[0, 1, 2, 3].map((position) => <button type="button" class="fruit-sequence-slot" data-fruit-slot={position} aria-label={`Fruta ${position + 1}: não selecionada`}>＋</button>)}</div><div class="fruit-choice-grid" aria-label="Escolha uma fruta para a próxima posição">{fruitEmojis.map((fruit) => <button type="button" class="fruit-choice" data-fruit-choice={fruit.emoji} data-fruit-name={fruit.name} aria-label={fruit.name} title={fruit.name}>{fruit.emoji}</button>)}</div><div class="fruit-sequence-actions"><button type="button" data-fruit-undo class="fruit-secondary-action">Desfazer última</button><button type="button" data-fruit-clear class="fruit-secondary-action">Limpar sequência</button></div><details class="fruit-access-alternative"><summary>Alternativa acessível: escolher pelo nome das frutas</summary><p>Escolha uma fruta para cada posição da sequência. Os nomes são anunciados por leitores de tela.</p><div class="fruit-name-selects">{[0, 1, 2, 3].map((position) => <label>Fruta {position + 1}<select data-fruit-select={position} aria-label={`Escolha a fruta da posição ${position + 1}`}><option value="">Selecione uma fruta</option>{fruitEmojis.map((fruit) => <option value={fruit.emoji}>{fruit.name}</option>)}</select></label>)}</div></details><input type="hidden" name="keyword" /><p data-fruit-selection-status class="fruit-selection-status" aria-live="polite">Nenhuma fruta selecionada.</p></fieldset><button type="submit" class="keyword-unlock-button" disabled><span aria-hidden="true">🔓</span> Liberar capítulo</button><p data-unlock-status class="keyword-unlock-status" aria-live="polite"></p></form></> : <><div class="chapter-title-row"><span>🔒</span><h2 class="font-display text-xl font-semibold leading-tight">Capítulo bloqueado</h2></div><div class="chapter-locked-message"><strong>Conclua os capítulos anteriores para liberar este conteúdo.</strong><p class="mt-2 text-sm">Seu progresso fica salvo automaticamente quando você marca uma aula como concluída.</p></div></> : <>
           {previousLesson && <a data-select-chapter href={`#${previousLesson.slug}`} class="previous-chapter"><span aria-hidden="true">←</span><span><small>Capítulo anterior</small><strong>{previousLesson.title}</strong></span></a>}
           <div class="chapter-title-row"><span>{String(lesson.lesson_order + 1).padStart(2, '0')}</span><h2 data-chapter-title class="font-display text-3xl font-semibold leading-tight">{lesson.title}</h2></div>
           {lesson.summary && <p class="mb-6 ml-12 text-sm leading-relaxed text-text-muted-light dark:text-text-muted-dark">{lesson.summary}</p>}
@@ -294,11 +295,66 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
   }));
   document.querySelectorAll<HTMLFormElement>('[data-unlock-form]').forEach((form) => form.addEventListener('submit', async (event) => {
     event.preventDefault(); const input = form.querySelector<HTMLInputElement>('input[name=keyword]')!; const status = form.querySelector<HTMLElement>('[data-unlock-status]')!; const button = form.querySelector<HTMLButtonElement>('button[type=submit]')!;
+    if (!input.value) { form.querySelector<HTMLElement>('[data-fruit-selection-status]')!.textContent = 'Selecione quatro frutas para liberar o capítulo.'; return; }
     button.disabled = true; button.textContent = 'Verificando…'; status.textContent = '';
     try { const response = await fetch('/api/lesson-unlock', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ discipline_slug: form.dataset.discipline, lesson_slug: form.dataset.lesson, keyword: input.value }) }); const result = await response.json(); if (!response.ok) throw new Error(result.error ?? 'Não foi possível liberar o capítulo.'); status.textContent = 'Capítulo liberado! Carregando conteúdo…'; location.reload(); }
-    catch (error) { status.textContent = error instanceof Error ? error.message : 'Não foi possível validar a palavra-chave.'; input.select(); }
+    catch (error) { status.textContent = error instanceof Error ? error.message : 'Não foi possível validar a palavra-chave.'; form.querySelector<HTMLButtonElement>('[data-fruit-slot]')?.focus({ preventScroll: true }); }
     finally { button.disabled = false; button.textContent = 'Liberar capítulo'; }
   }));
+  document.querySelectorAll<HTMLFormElement>('[data-unlock-form]').forEach((form) => {
+    const slots = [...form.querySelectorAll<HTMLButtonElement>('[data-fruit-slot]')];
+    const choices = [...form.querySelectorAll<HTMLButtonElement>('[data-fruit-choice]')];
+    const selects = [...form.querySelectorAll<HTMLSelectElement>('[data-fruit-select]')];
+    const keywordInput = form.querySelector<HTMLInputElement>('input[name="keyword"]')!;
+    const selectionStatus = form.querySelector<HTMLElement>('[data-fruit-selection-status]')!;
+    const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+    const chosen = () => slots.map((slot) => slot.dataset.emoji ?? '');
+    const render = () => {
+      const sequence = chosen();
+      const count = sequence.filter(Boolean).length;
+      slots.forEach((slot, position) => {
+        const emoji = sequence[position];
+        const name = choices.find((choice) => choice.dataset.fruitChoice === emoji)?.dataset.fruitName;
+        slot.textContent = emoji || '＋';
+        slot.setAttribute('aria-label', emoji ? `Fruta ${position + 1}: ${name}. Clique para remover.` : `Fruta ${position + 1}: não selecionada`);
+        slot.classList.toggle('is-filled', Boolean(emoji));
+      });
+      selects.forEach((select, position) => { select.value = sequence[position]; });
+      choices.forEach((choice) => choice.setAttribute('aria-pressed', String(sequence.includes(choice.dataset.fruitChoice ?? ''))));
+      keywordInput.value = count === 4 ? sequence.join('-') : '';
+      submit.disabled = count !== 4;
+      selectionStatus.textContent = count === 4
+        ? `Sequência escolhida: ${sequence.map((emoji) => choices.find((choice) => choice.dataset.fruitChoice === emoji)?.dataset.fruitName).join(', ')}.`
+        : `${count} de 4 frutas selecionadas.`;
+    };
+    choices.forEach((choice) => choice.addEventListener('click', () => {
+      const slot = slots.find((item) => !item.dataset.emoji);
+      if (!slot) { selectionStatus.textContent = 'A sequência já tem quatro frutas. Desfaça ou limpe para alterar.'; return; }
+      slot.dataset.emoji = choice.dataset.fruitChoice ?? '';
+      render();
+    }));
+    slots.forEach((slot, position) => slot.addEventListener('click', () => {
+      if (!slot.dataset.emoji) return;
+      const sequence = chosen().filter(Boolean);
+      sequence.splice(position, 1);
+      slots.forEach((item, index) => { item.dataset.emoji = sequence[index] ?? ''; });
+      render();
+    }));
+    selects.forEach((select) => select.addEventListener('change', () => {
+      const position = Number(select.dataset.fruitSelect);
+      slots[position].dataset.emoji = select.value;
+      render();
+    }));
+    form.querySelector<HTMLButtonElement>('[data-fruit-undo]')?.addEventListener('click', () => {
+      const sequence = chosen().filter(Boolean); sequence.pop();
+      slots.forEach((slot, index) => { slot.dataset.emoji = sequence[index] ?? ''; });
+      render();
+    });
+    form.querySelector<HTMLButtonElement>('[data-fruit-clear]')?.addEventListener('click', () => {
+      slots.forEach((slot) => { slot.dataset.emoji = ''; }); render();
+    });
+    render();
+  });
   welcomeNav?.addEventListener('click', () => {
     if (noteDirty && !confirm('Sua anotação ainda não foi salva. Descartar as alterações?')) return;
     noteDirty = false;
@@ -461,6 +517,28 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
   .chapter-locked:hover { background:transparent!important; color:inherit!important; }
   .chapter-locked-message { margin:22px 0 0 40px; border:1px dashed var(--color-border-light); border-radius:14px; background:var(--color-surface-light); padding:22px; color:var(--color-text-muted-light); font-size:.9rem; line-height:1.6; }
   .keyword-unlock-form { display:grid; gap:14px; margin-top:24px; border:1px solid color-mix(in srgb,var(--color-accent-light) 24%,var(--color-border-light)); border-radius:18px; background:color-mix(in srgb,var(--color-accent-light) 4%,var(--color-surface-light)); padding:20px; box-shadow:0 8px 24px #1e1e1e08; }
+  .fruit-access-fieldset { display:grid; gap:14px; min-width:0; margin:0; border:0; padding:0; }
+  .fruit-access-fieldset legend { margin-bottom:4px; color:var(--color-text-main-light); font-size:.88rem; font-weight:750; }
+  .fruit-sequence-slots { display:flex; flex-wrap:wrap; gap:9px; }
+  .fruit-sequence-slot { display:grid; width:54px; height:54px; place-items:center; border:1px dashed color-mix(in srgb,var(--color-accent-light) 48%,var(--color-border-light)); border-radius:14px; background:var(--color-surface-light); color:var(--color-text-muted-light); font-size:1.45rem; transition:border-color .18s,background .18s,transform .18s; }
+  .fruit-sequence-slot.is-filled { border-style:solid; border-color:color-mix(in srgb,var(--color-accent-light) 50%,var(--color-border-light)); background:color-mix(in srgb,var(--color-accent-light) 8%,var(--color-surface-light)); }
+  .fruit-sequence-slot:hover { transform:translateY(-1px); border-color:var(--color-accent-light); }
+  .fruit-choice-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(42px,1fr)); gap:7px; }
+  .fruit-choice { display:grid; min-height:44px; place-items:center; border:1px solid var(--color-border-light); border-radius:12px; background:var(--color-surface-light); font-size:1.45rem; transition:transform .16s,border-color .16s,background .16s,box-shadow .16s; }
+  .fruit-choice:hover { transform:translateY(-2px); border-color:var(--color-accent-light); box-shadow:0 4px 10px #1e1e1e10; }
+  .fruit-choice[aria-pressed="true"] { border-color:var(--color-accent-light); background:color-mix(in srgb,var(--color-accent-light) 13%,var(--color-surface-light)); box-shadow:0 0 0 2px color-mix(in srgb,var(--color-accent-light) 15%,transparent); }
+  .fruit-choice:focus-visible,.fruit-sequence-slot:focus-visible,.fruit-secondary-action:focus-visible { outline:3px solid color-mix(in srgb,var(--color-accent-light) 45%,transparent); outline-offset:2px; }
+  .fruit-sequence-actions { display:flex; flex-wrap:wrap; gap:8px; }
+  .fruit-secondary-action { border:1px solid var(--color-border-light); border-radius:999px; background:var(--color-surface-light); padding:7px 12px; color:var(--color-text-muted-light); font-size:.75rem; font-weight:650; }
+  .fruit-secondary-action:hover { border-color:var(--color-accent-light); color:var(--color-accent-light); }
+  .fruit-access-alternative { border-top:1px solid var(--color-border-light); padding-top:12px; }
+  .fruit-access-alternative summary { width:fit-content; cursor:pointer; color:var(--color-accent-light); font-size:.78rem; font-weight:700; }
+  .fruit-access-alternative > p { margin-top:8px; color:var(--color-text-muted-light); font-size:.75rem; line-height:1.5; }
+  .fruit-name-selects { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:12px; }
+  .fruit-name-selects label { display:grid; gap:5px; color:var(--color-text-main-light); font-size:.72rem; font-weight:700; }
+  .fruit-name-selects select { min-width:0; min-height:42px; border:1px solid var(--color-border-light); border-radius:10px; background:var(--color-surface-light); padding:8px 10px; color:var(--color-text-main-light); font:500 .82rem 'Exo 2',sans-serif; }
+  .fruit-name-selects select:focus { border-color:var(--color-accent-light); outline:0; box-shadow:0 0 0 3px color-mix(in srgb,var(--color-accent-light) 14%,transparent); }
+  .fruit-selection-status { min-height:1.1rem; color:var(--color-text-muted-light); font-size:.75rem; }
   .keyword-unlock-label { display:grid; gap:9px; color:var(--color-text-main-light); font-size:.83rem; font-weight:700; }
   .keyword-unlock-input { display:block; width:100%; min-height:48px; border:1px solid var(--color-border-light); border-radius:12px; background:var(--color-surface-light); padding:12px 14px; color:var(--color-text-main-light); font:500 .95rem 'Exo 2',sans-serif; box-shadow:inset 0 1px 2px #1e1e1e08; transition:border-color .18s,box-shadow .18s; }
   .keyword-unlock-input::placeholder { color:var(--color-text-muted-light); opacity:.72; }
@@ -468,13 +546,21 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
   .keyword-unlock-button { display:inline-flex; min-height:46px; width:fit-content; align-items:center; justify-content:center; gap:9px; border:1px solid color-mix(in srgb,var(--color-accent-light) 75%,#174354); border-radius:999px; background:var(--color-accent-light); padding:11px 20px; color:white; font-size:.85rem; font-weight:750; box-shadow:0 5px 14px color-mix(in srgb,var(--color-accent-light) 25%,transparent); transition:transform .18s,box-shadow .18s,filter .18s; }
   .keyword-unlock-button:hover { transform:translateY(-1px); filter:brightness(.96); box-shadow:0 8px 18px color-mix(in srgb,var(--color-accent-light) 32%,transparent); }
   .keyword-unlock-button:focus-visible { outline:3px solid color-mix(in srgb,var(--color-accent-light) 45%,transparent); outline-offset:3px; }
-  .keyword-unlock-button:disabled { cursor:wait; opacity:.7; transform:none; }
+  .keyword-unlock-button:disabled { cursor:not-allowed; opacity:.55; transform:none; box-shadow:none; }
   .keyword-unlock-status { min-height:1.25rem; color:var(--color-text-muted-light); font-size:.8rem; line-height:1.5; }
   :global(.dark) .module-choice { background:var(--color-surface-dark); border-color:var(--color-border-dark); }
   :global(.dark) .module-choice summary small { color:var(--color-text-muted-dark); }
   :global(.dark) .module-choice-lessons { border-color:var(--color-border-dark); }
   :global(.dark) .chapter-locked-message { border-color:var(--color-border-dark); background:var(--color-surface-dark); color:var(--color-text-muted-dark); }
   :global(.dark) .keyword-unlock-form { border-color:color-mix(in srgb,var(--color-accent-dark) 28%,var(--color-border-dark)); background:color-mix(in srgb,var(--color-accent-dark) 6%,var(--color-surface-dark)); box-shadow:0 8px 24px #0003; }
+  :global(.dark) .fruit-access-fieldset legend,:global(.dark) .fruit-name-selects label { color:var(--color-text-main-dark); }
+  :global(.dark) .fruit-sequence-slot,:global(.dark) .fruit-choice,:global(.dark) .fruit-secondary-action,:global(.dark) .fruit-name-selects select { border-color:var(--color-border-dark); background:var(--color-surface-dark); color:var(--color-text-main-dark); }
+  :global(.dark) .fruit-sequence-slot.is-filled,:global(.dark) .fruit-choice[aria-pressed="true"] { border-color:var(--color-accent-dark); background:color-mix(in srgb,var(--color-accent-dark) 13%,var(--color-surface-dark)); }
+  :global(.dark) .fruit-sequence-slot:hover,:global(.dark) .fruit-choice:hover { border-color:var(--color-accent-dark); }
+  :global(.dark) .fruit-access-alternative { border-color:var(--color-border-dark); }
+  :global(.dark) .fruit-access-alternative > p,:global(.dark) .fruit-selection-status,:global(.dark) .fruit-secondary-action { color:var(--color-text-muted-dark); }
+  :global(.dark) .fruit-access-alternative summary { color:var(--color-accent-dark); }
+  :global(.dark) .fruit-name-selects select:focus { border-color:var(--color-accent-dark); box-shadow:0 0 0 3px color-mix(in srgb,var(--color-accent-dark) 17%,transparent); }
   :global(.dark) .keyword-unlock-label { color:var(--color-text-main-dark); }
   :global(.dark) .keyword-unlock-input { border-color:var(--color-border-dark); background:var(--color-surface-dark); color:var(--color-text-main-dark); }
   :global(.dark) .keyword-unlock-input::placeholder,:global(.dark) .keyword-unlock-status { color:var(--color-text-muted-dark); }

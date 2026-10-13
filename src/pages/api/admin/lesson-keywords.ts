@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { requireAdmin } from '../../../lib/admin';
+import { normalizeFruitSequence } from '../../../lib/fruit-emojis';
 
 export const GET: APIRoute = async ({ cookies, request }) => {
   const auth = await requireAdmin(cookies, request);
@@ -39,6 +40,9 @@ export const PUT: APIRoute = async ({ cookies, request }) => {
   }
 
   const normalizedKeyword = keyword.trim();
+  if (normalizedKeyword && !normalizeFruitSequence(normalizedKeyword)) {
+    return Response.json({ error: 'Use quatro emojis de frutas separados por hífen. Exemplo: 🍎-🍌-🍇-🍓.' }, { status: 400 });
+  }
   const { data: lesson, error: lessonError } = await auth.supabase.from('apostilas').select('id').eq('discipline_slug', discipline_slug).eq('slug', lesson_slug).maybeSingle();
   if (lessonError || !lesson) return Response.json({ error: lessonError?.message ?? 'Capítulo não encontrado.' }, { status: 404 });
 
