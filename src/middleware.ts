@@ -18,7 +18,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) return reject(401, 'Autenticação necessária.');
 
-    const { data: profile, error: profileError } = await supabase.from('profiles').select('is_active,role,can_access_teacher_guides').eq('id', user.id).maybeSingle();
+    const { data: profile, error: profileError } = await supabase.from('profiles').select('is_active,role,can_access_teacher_guides,year_level').eq('id', user.id).maybeSingle();
     if (profileError || !profile?.is_active) return reject(403, 'A conta aguarda aprovação.');
     if (isAdminPath && profile.role !== 'admin') return reject(403, 'Acesso administrativo necessário.');
     if (isTeacherPath && profile.role !== 'admin' && !profile.can_access_teacher_guides) return reject(403, 'Acesso à área do professor necessário.');
@@ -37,14 +37,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
         // Rotas antigas de capítulo também passam pela barreira sequencial.
         // A página principal aplica a mesma regra antes de renderizar conteúdo.
         if (segments.length > 2) {
-          const targetSlug = segments.at(-1);
-          const [{ data: lessons, error: lessonsError }, { data: modules, error: modulesError }, { data: progress, error: progressError }] = await Promise.all([
-            supabase.from('apostilas').select('slug,lesson_order,module_id,module').eq('discipline_slug', discipline).eq('published', true),
+          const targetSlug = decodeURIComponent(segments.at(-1) ?? '');
+          const [{ data: lessons, error: lessonsError }, { data: modules, error: modulesError }, { data: progress, error: progressError }, { data: subject, error: subjectError }, { data: unlocks, error: unlockError }] = await Promise.all([
+            supabase.from('apostilas').select('slug,lesson_order,module_id,module,keyword_required').eq('discipline_slug', discipline).eq('published', true),
             supabase.from('modules').select('id,name,sort_order').eq('discipline_slug', discipline).order('sort_order'),
-            supabase.from('lesson_progress').select('lesson_slug').eq('user_id', user.id).eq('disciplina_slug', discipline)
+            supabase.from('lesson_progress').select('lesson_slug').eq('user_id', user.id).eq('disciplina_slug', discipline),
+            supabase.from('disciplines').select('year_level').eq('slug', discipline).maybeSingle(),
+            supabase.from('lesson_unlocks').select('lesson_slug').eq('user_id', user.id).eq('discipline_slug', discipline)
           ]);
-          if (lessonsError || modulesError || progressError) {
-            console.error('Falha ao verificar pré-requisitos do capítulo:', lessonsError ?? modulesError ?? progressError);
+          if (lessonsError || modulesError || progressError || subjectError || unlockError) {
+            console.error('Falha ao verificar acesso ao capítulo:', lessonsError ?? modulesError ?? progressError ?? subjectError ?? unlockError);
             return context.redirect(`/apostila/${discipline}`);
           }
           const moduleOrder = (lesson: any) => {
@@ -53,10 +55,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
           };
           const orderedLessons = [...(lessons ?? [])].sort((a, b) => moduleOrder(a) - moduleOrder(b) || a.lesson_order - b.lesson_order || a.slug.localeCompare(b.slug));
           const currentIndex = orderedLessons.findIndex((lesson) => lesson.slug === targetSlug);
+          const olderYearAccess = Boolean(profile.year_level && subject?.year_level && Number(profile.year_level) > Number(subject.year_level));
           if (currentIndex >= 0) {
             const completed = new Set((progress ?? []).map((row) => row.lesson_slug));
-            if (orderedLessons.slice(0, currentIndex).some((lesson) => !completed.has(lesson.slug))) {
-              return context.redirect(`/apostila/${discipline}?capitulo-bloqueado=1`);
+            const lesson = orderedLessons[currentIndex];
+            const hubChapterUrl = `/apostila/${discipline}#${encodeURIComponent(targetSlug)}`;
+            if (orderedLessons.slice(0, currentIndex).some((previous) => !completed.has(previous.slug))) {
+              return context.redirect(hubChapterUrl);
+            }
+            if (lesson.keyword_required && !olderYearAccess && !(unlocks ?? []).some((row) => row.lesson_slug === targetSlug)) {
+              return context.redirect(hubChapterUrl);
             }
           }
         }

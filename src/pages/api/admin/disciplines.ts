@@ -21,8 +21,10 @@ async function save({ request, cookies }: Parameters<APIRoute>[0]) {
     description: String(body.description ?? '').trim().slice(0, 2000),
     skills: Array.isArray(body.skills) ? body.skills.filter((item: unknown) => typeof item === 'string').map((item: string) => item.trim()).filter(Boolean).slice(0, 30) : [],
     competencies: Array.isArray(body.competencies) ? body.competencies.filter((item: unknown) => typeof item === 'string').map((item: string) => item.trim()).filter(Boolean).slice(0, 30) : [],
+    year_level: body.year_level === '' || body.year_level == null ? null : Number(body.year_level),
     sort_order: Math.max(0, Number(body.sort_order) || 0), active: body.active !== false, updated_at: new Date().toISOString()
   };
+  if (values.year_level !== null && (!Number.isInteger(values.year_level) || values.year_level < 1 || values.year_level > 3)) return Response.json({ error: 'Selecione um ano válido para a disciplina.' }, { status: 400 });
   const query = body.id ? auth.supabase.from('disciplines').update(values).eq('id', body.id) : auth.supabase.from('disciplines').insert(values);
   const { data, error } = await query.select().single();
   if (error) return Response.json({ error: error.message }, { status: 400 });

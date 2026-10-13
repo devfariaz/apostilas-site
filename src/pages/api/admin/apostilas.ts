@@ -60,6 +60,22 @@ async function save({ request, cookies }: Parameters<APIRoute>[0]) {
   const query = body.id ? auth.supabase.from('apostilas').update(values).eq('id', body.id) : auth.supabase.from('apostilas').insert({ ...values, created_by: auth.user.id });
   const { data, error } = await query.select().single();
   if (error) return Response.json({ error: error.message }, { status: 400 });
+  const accessKeyword = typeof body.access_keyword === 'string' ? body.access_keyword.trim() : '';
+  if (accessKeyword.length > 0 || body.clear_access_keyword === true) {
+    const keyQuery = accessKeyword
+      ? auth.supabase.from('lesson_access_keys').upsert({
+          discipline_slug,
+          lesson_slug: data.slug,
+          keyword: accessKeyword,
+          updated_by: auth.user.id,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'discipline_slug,lesson_slug' })
+      : auth.supabase.from('lesson_access_keys').delete().eq('discipline_slug', discipline_slug).eq('lesson_slug', data.slug);
+    const { error: keyError } = await keyQuery;
+    if (keyError) return Response.json({ error: keyError.code === '23505' ? 'Essa palavra-chave já está em uso em outro capítulo.' : keyError.message }, { status: 400 });
+    const { error: flagError } = await auth.supabase.from('apostilas').update({ keyword_required: Boolean(accessKeyword) }).eq('id', data.id);
+    if (flagError) return Response.json({ error: flagError.message }, { status: 400 });
+  }
   return Response.json({ apostila: data });
 }
 export const POST: APIRoute = save;
