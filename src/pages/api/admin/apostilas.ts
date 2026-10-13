@@ -1,11 +1,15 @@
 import type { APIRoute } from 'astro';
 import { requireAdmin } from '../../../lib/admin';
 const slugify = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const keywordWords = {
+  people: ['ana', 'bia', 'caio', 'davi', 'enzo', 'heloisa', 'igor', 'joao', 'lara', 'luca', 'maia', 'nina', 'otto', 'paula', 'rafa', 'sofia', 'teo', 'vitor', 'yara', 'zoe'],
+  objects: ['cadeira', 'caderno', 'caneca', 'chave', 'colher', 'copo', 'escova', 'espelho', 'janela', 'livro', 'mochila', 'panela', 'papel', 'quadro', 'relogio', 'sapato', 'tesoura', 'toalha', 'vaso', 'violao'],
+  fruits: ['abacaxi', 'ameixa', 'banana', 'caju', 'cereja', 'figo', 'goiaba', 'kiwi', 'laranja', 'maca', 'manga', 'melao', 'morango', 'pera', 'pessego', 'pitaya', 'uva', 'limao', 'coco', 'jabuticaba'],
+  animals: ['abelha', 'aguia', 'baleia', 'cachorro', 'cavalo', 'coelho', 'coruja', 'gato', 'golfinho', 'jacare', 'leao', 'lobo', 'macaco', 'panda', 'pato', 'raposa', 'sapo', 'tigre', 'tucano', 'zebra']
+};
 const createAccessKeyword = () => {
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const bytes = crypto.getRandomValues(new Uint8Array(12));
-  const value = Array.from(bytes, (byte) => alphabet[byte & 31]).join('');
-  return value.match(/.{4}/g)!.join('-');
+  const choose = (words: string[]) => words[crypto.getRandomValues(new Uint32Array(1))[0] % words.length];
+  return [choose(keywordWords.people), choose(keywordWords.objects), choose(keywordWords.fruits), choose(keywordWords.animals)].join('-').replace(/\s+/g, '');
 };
 
 export const GET: APIRoute = async ({ cookies, url, request }) => {
