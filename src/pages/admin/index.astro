@@ -155,6 +155,15 @@ const { data: { user } } = await supabase.auth.getUser();
   .admin-save { width:100%; border-radius:14px; background:linear-gradient(135deg,var(--color-accent-light),color-mix(in srgb,var(--color-accent-light) 76%,#152d3c)); padding:.72rem 1rem; color:#fff; font-size:.78rem; font-weight:700; box-shadow:0 5px 14px color-mix(in srgb,var(--color-accent-light) 22%,transparent); transition:transform .18s,box-shadow .18s,opacity .18s; }
   .admin-save:hover { transform:translateY(-1px); box-shadow:0 8px 20px color-mix(in srgb,var(--color-accent-light) 30%,transparent); }
   .admin-save:disabled { cursor:wait; opacity:.7; transform:none; }
+  :global(.keyword-input-group) { display:grid; gap:.4rem; min-width:0; }
+  :global(.keyword-input-label) { color:#55514b; font-size:.72rem; font-weight:700; letter-spacing:.02em; }
+  :global(.keyword-card-input) { display:block; width:100%; min-height:2.9rem; border:1px solid #ded9d0; border-radius:12px; padding:.7rem .85rem; background:#fff; color:#1e1e1e; font-size:.9rem; box-shadow:0 1px 2px #1e1e1e08; transition:border-color .18s,box-shadow .18s; }
+  :global(.keyword-card-input:focus) { border-color:var(--color-accent-light); outline:0; box-shadow:0 0 0 4px color-mix(in srgb,var(--color-accent-light) 14%,transparent); }
+  :global(.keyword-save-button) { display:inline-flex; min-height:2.8rem; width:100%; align-items:center; justify-content:center; gap:.5rem; border:1px solid color-mix(in srgb,var(--color-accent-light) 70%,#174354); border-radius:12px; padding:.65rem 1rem; background:var(--color-accent-light); color:white; font-size:.84rem; font-weight:750; box-shadow:0 4px 10px color-mix(in srgb,var(--color-accent-light) 24%,transparent); transition:transform .18s,box-shadow .18s,filter .18s; }
+  :global(.keyword-save-button:hover) { transform:translateY(-1px); filter:brightness(.96); box-shadow:0 7px 15px color-mix(in srgb,var(--color-accent-light) 32%,transparent); }
+  :global(.keyword-save-button:disabled) { cursor:wait; opacity:.72; transform:none; }
+  :global(.dark .keyword-input-label) { color:#d3d0ca; }
+  :global(.dark .keyword-card-input) { border-color:#38383d; background:#19191d; color:#ededed; }
   :global(.dark) .admin-secondary { border-color:#38383d; background:#19191d; }
   :global(.dark) .admin-secondary:hover { background:color-mix(in srgb,var(--color-accent-light) 12%,#19191d); }
   .admin-tabs { display:flex; gap:.5rem; overflow-x:auto; border-bottom:1px solid #e5e0d8; padding-bottom:.75rem; }
@@ -440,11 +449,14 @@ const { data: { user } } = await supabase.auth.getUser();
       const meta = document.createElement('small'); meta.className = 'mt-1 block text-xs text-text-muted-light dark:text-text-muted-dark';
       meta.textContent = `${disciplines.find((item) => item.slug === lesson.discipline_slug)?.name ?? lesson.discipline_slug} · ${modules.find((item) => item.id === lesson.module_id)?.name ?? lesson.module ?? 'Sem módulo'}`;
       heading.append(title, meta);
-      const row = document.createElement('div'); row.className = 'flex flex-wrap gap-2';
-      const input = document.createElement('input'); input.className = 'admin-input min-w-0 flex-1'; input.type = 'text'; input.maxLength = 100; input.autocomplete = 'off'; input.value = lessonKeywords.get(`${lesson.discipline_slug}:${lesson.slug}`) ?? '';  input.placeholder = 'Sem palavra-chave'; input.setAttribute('aria-label', `Palavra-chave: ${lesson.title}`);
-      const save = document.createElement('button'); save.type = 'button'; save.className = 'admin-primary'; save.textContent = 'Salvar';
-      save.addEventListener('click', async () => { save.disabled = true; save.textContent = 'Salvando…'; try { await api('/api/admin/lesson-keywords', 'PUT', { discipline_slug: lesson.discipline_slug, lesson_slug: lesson.slug, keyword: input.value }); setStatus('#keyword-status', input.value.trim() ? 'Palavra-chave salva. Ela agora está visível somente nesta área administrativa.' : 'Palavra-chave removida.'); await load(); } catch (error) { setStatus('#keyword-status', error instanceof Error ? error.message : 'Não foi possível salvar a palavra-chave.', true); } finally { save.disabled = false; save.textContent = 'Salvar'; } });
-      row.append(input, save); card.append(heading, row); list.append(card);
+      const row = document.createElement('div'); row.className = 'grid gap-3';
+      const field = document.createElement('label'); field.className = 'keyword-input-group';
+      const fieldLabel = document.createElement('span'); fieldLabel.className = 'keyword-input-label'; fieldLabel.textContent = 'Palavra-chave de acesso';
+      const input = document.createElement('input'); input.className = 'keyword-card-input'; input.type = 'text'; input.maxLength = 100; input.autocomplete = 'off'; input.value = lessonKeywords.get(`${lesson.discipline_slug}:${lesson.slug}`) ?? ''; input.placeholder = 'Ex.: ana-cadeira-maca-gato'; input.setAttribute('aria-label', `Palavra-chave: ${lesson.title}`);
+      field.append(fieldLabel, input);
+      const save = document.createElement('button'); save.type = 'button'; save.className = 'keyword-save-button'; save.textContent = 'Salvar palavra-chave';
+      save.addEventListener('click', async () => { save.disabled = true; save.textContent = 'Salvando…'; try { await api('/api/admin/lesson-keywords', 'PUT', { discipline_slug: lesson.discipline_slug, lesson_slug: lesson.slug, keyword: input.value }); setStatus('#keyword-status', input.value.trim() ? 'Palavra-chave salva. Ela agora está visível somente nesta área administrativa.' : 'Palavra-chave removida.'); await load(); } catch (error) { setStatus('#keyword-status', error instanceof Error ? error.message : 'Não foi possível salvar a palavra-chave.', true); } finally { save.disabled = false; save.textContent = 'Salvar palavra-chave'; } });
+      row.append(field, save); card.append(heading, row); list.append(card);
     });
     if (!visible.length) { const empty = document.createElement('p'); empty.className = 'rounded-xl border border-dashed border-border-light p-5 text-sm text-text-muted-light dark:border-border-dark dark:text-text-muted-dark'; empty.textContent = lessons.length ? 'Nenhum capítulo corresponde aos filtros.' : 'Cadastre capítulos para definir palavras-chave.'; list.append(empty); }
   }
