@@ -512,7 +512,7 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
   .reader-edit-chapter:hover { background:var(--color-accent-light); color:white; transform:translateY(-1px); }
   .reader-edit-chapter svg { width:1rem; height:1rem; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
   .chapter-title-row { grid-template-columns:34px minmax(0,1fr); }
-  .reader-edit-dialog { width:min(1100px,calc(100vw - 2rem)); max-width:none; max-height:min(92dvh,1000px); overflow:auto; border:1px solid var(--color-border-light); border-radius:1.25rem; padding:1.25rem; color:var(--color-text-main-light); background:var(--color-surface-light); box-shadow:0 24px 80px #0004; }
+  .reader-edit-dialog { position:fixed; inset:50% auto auto 50%; transform:translate(-50%,-50%); margin:0; width:min(1100px,calc(100vw - 2rem)); max-width:none; max-height:min(92dvh,1000px); overflow:auto; border:1px solid var(--color-border-light); border-radius:1.25rem; padding:1.25rem; color:var(--color-text-main-light); background:var(--color-surface-light); box-shadow:0 24px 80px #0004; }
   .reader-edit-dialog::backdrop { background:#10171999; backdrop-filter:blur(3px); }
   .reader-edit-dialog form { display:grid; gap:1rem; }
   .reader-edit-header { position:sticky; top:-1.25rem; z-index:2; display:flex; align-items:center; justify-content:space-between; margin:-1.25rem -1.25rem 0; padding:1rem 1.25rem; border-bottom:1px solid var(--color-border-light); background:var(--color-surface-light); }
