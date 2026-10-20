@@ -13,6 +13,7 @@ let modules: any[] = [];
 let lessons: any[] = [];
 let completedLessons = new Set<string>();
 let isAdmin = false;
+let isAlumni = false;
 let studentYear: number | null = null;
 let unlockedByKeyword = new Set<string>();
 try {
@@ -23,13 +24,14 @@ try {
     supabase.from('modules').select('*').eq('discipline_slug', discipline).order('sort_order'),
     supabase.from('apostilas').select('*').eq('discipline_slug', discipline).eq('published', true).order('lesson_order'),
     user ? supabase.from('lesson_progress').select('lesson_slug').eq('user_id', user.id).eq('disciplina_slug', discipline) : Promise.resolve({ data: [] }),
-    user ? supabase.from('profiles').select('role,year_level').eq('id', user.id).maybeSingle() : Promise.resolve({ data: null })
+    user ? supabase.from('profiles').select('role,year_level,is_alumni').eq('id', user.id).maybeSingle() : Promise.resolve({ data: null })
   ]);
   if (d.data) subject = d.data;
   modules = m.data ?? [];
   lessons = l.data ?? [];
   completedLessons = new Set((p.data ?? []).map((row: any) => row.lesson_slug));
   isAdmin = profile.data?.role === 'admin';
+  isAlumni = Boolean(profile.data?.is_alumni);
   studentYear = Number(profile.data?.year_level) || null;
   if (user) {
     const { data: unlocks } = await supabase.from('lesson_unlocks').select('lesson_slug').eq('user_id', user.id).eq('discipline_slug', discipline);
@@ -52,7 +54,7 @@ const keywordPromptLessons = new Set<string>();
 let reachedFirstIncomplete = false;
 for (const lesson of lessonsByOrder) {
   const sequenceAvailable = isAdmin || !reachedFirstIncomplete;
-  const olderYearAccess = Boolean(studentYear && subject.year_level && studentYear > Number(subject.year_level));
+  const olderYearAccess = Boolean(isAlumni || (studentYear && subject.year_level && studentYear > Number(subject.year_level)));
   if (sequenceAvailable) sequenceAvailableLessons.add(lesson.slug);
   if (sequenceAvailable && (isAdmin || olderYearAccess || !lesson.keyword_required || unlockedByKeyword.has(lesson.slug))) unlockedLessons.add(lesson.slug);
   else if (sequenceAvailable && lesson.keyword_required && !isAdmin && !olderYearAccess) keywordPromptLessons.add(lesson.slug);

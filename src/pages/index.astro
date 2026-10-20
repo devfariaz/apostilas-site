@@ -18,9 +18,9 @@ try {
   ]);
   if (subjectsResult.data?.length) subjects = subjectsResult.data.map((item) => ({ ...item, icon: '✳' }));
   if (user) {
-    const { data: profile } = await supabase.from('profiles').select('role,can_access_teacher_guides').eq('id', user.id).maybeSingle();
+    const { data: profile } = await supabase.from('profiles').select('role,can_access_teacher_guides,is_alumni').eq('id', user.id).maybeSingle();
     canAccessTeacherGuides = profile?.role === 'admin' || Boolean(profile?.can_access_teacher_guides);
-    if (profile?.role !== 'admin') {
+    if (profile?.role !== 'admin' && !profile?.is_alumni) {
       const { data: assignments, error: assignmentError } = await supabase.from('student_disciplines').select('discipline_slug').eq('user_id', user.id);
       if (assignmentError) throw assignmentError;
       const assignedSlugs = new Set((assignments ?? []).map((assignment) => assignment.discipline_slug));

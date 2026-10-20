@@ -18,7 +18,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) return reject(401, 'Autenticação necessária.');
 
-    const { data: profile, error: profileError } = await supabase.from('profiles').select('is_active,role,can_access_teacher_guides,year_level').eq('id', user.id).maybeSingle();
+    const { data: profile, error: profileError } = await supabase.from('profiles').select('is_active,role,can_access_teacher_guides,year_level,is_alumni').eq('id', user.id).maybeSingle();
     if (profileError || !profile?.is_active) return reject(403, 'A conta aguarda aprovação.');
     if (isAdminPath && profile.role !== 'admin') return reject(403, 'Acesso administrativo necessário.');
     if (isTeacherPath && profile.role !== 'admin' && !profile.can_access_teacher_guides) return reject(403, 'Acesso à área do professor necessário.');
@@ -27,12 +27,14 @@ export const onRequest = defineMiddleware(async (context, next) => {
       const segments = pathname.split('/').filter(Boolean);
       const discipline = segments[1];
       if (discipline) {
-        const { data: assignments, error: assignmentError } = await supabase.from('student_disciplines').select('discipline_slug').eq('user_id', user.id).eq('discipline_slug', discipline).limit(1);
-        if (assignmentError) {
-          console.error('Falha ao verificar a disciplina do aluno:', assignmentError);
-          return context.redirect('/?acesso=restrito');
+        if (!profile.is_alumni) {
+          const { data: assignments, error: assignmentError } = await supabase.from('student_disciplines').select('discipline_slug').eq('user_id', user.id).eq('discipline_slug', discipline).limit(1);
+          if (assignmentError) {
+            console.error('Falha ao verificar a disciplina do aluno:', assignmentError);
+            return context.redirect('/?acesso=restrito');
+          }
+          if (!assignments?.length) return context.redirect('/?acesso=restrito');
         }
-        if (!assignments?.length) return context.redirect('/?acesso=restrito');
 
         // Rotas antigas de capítulo também passam pela barreira sequencial.
         // A página principal aplica a mesma regra antes de renderizar conteúdo.
@@ -55,7 +57,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
           };
           const orderedLessons = [...(lessons ?? [])].sort((a, b) => moduleOrder(a) - moduleOrder(b) || a.lesson_order - b.lesson_order || a.slug.localeCompare(b.slug));
           const currentIndex = orderedLessons.findIndex((lesson) => lesson.slug === targetSlug);
-          const olderYearAccess = Boolean(profile.year_level && subject?.year_level && Number(profile.year_level) > Number(subject.year_level));
+          const olderYearAccess = Boolean(profile.is_alumni || (profile.year_level && subject?.year_level && Number(profile.year_level) > Number(subject.year_level)));
           if (currentIndex >= 0) {
             const completed = new Set((progress ?? []).map((row) => row.lesson_slug));
             const lesson = orderedLessons[currentIndex];
