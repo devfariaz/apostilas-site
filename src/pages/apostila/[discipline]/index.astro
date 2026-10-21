@@ -4,7 +4,7 @@ import { createSupabaseServerClient } from '../../../lib/supabase';
 import { disciplines } from '../../../lib/catalog';
 import { marked } from 'marked';
 import sanitizeHtml from 'sanitize-html';
-import { fruitEmojis } from '../../../lib/fruit-emojis';
+import { fruitEmojis, fruitNameForEmoji } from '../../../lib/fruit-emojis';
 export const prerender = false;
 const { discipline } = Astro.params;
 let user = null;
@@ -16,6 +16,7 @@ let isAdmin = false;
 let isAlumni = false;
 let studentYear: number | null = null;
 let unlockedByKeyword = new Set<string>();
+let lessonKeywords = new Map<string, string>();
 try {
   const supabase = createSupabaseServerClient(Astro.cookies, Astro.request);
   const { data: auth } = await supabase.auth.getUser(); user = auth.user;
@@ -33,6 +34,14 @@ try {
   isAdmin = profile.data?.role === 'admin';
   isAlumni = Boolean(profile.data?.is_alumni);
   studentYear = Number(profile.data?.year_level) || null;
+  if (isAdmin && lessons.length > 0) {
+    const { data: accessKeys } = await supabase
+      .from('lesson_access_keys')
+      .select('lesson_slug,keyword')
+      .eq('discipline_slug', discipline)
+      .in('lesson_slug', lessons.map((lesson: any) => lesson.slug));
+    lessonKeywords = new Map((accessKeys ?? []).map((row: any) => [row.lesson_slug, row.keyword]));
+  }
   if (user) {
     const { data: unlocks } = await supabase.from('lesson_unlocks').select('lesson_slug').eq('user_id', user.id).eq('discipline_slug', discipline);
     unlockedByKeyword = new Set((unlocks ?? []).map((row: any) => row.lesson_slug));
@@ -137,6 +146,7 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
           <div class="chapter-title-row"><span>{String(lesson.lesson_order + 1).padStart(2, '0')}</span><h2 data-chapter-title class="font-display text-3xl font-semibold leading-tight">{lesson.title}</h2></div>
           {lesson.summary && <p class="mb-6 ml-12 text-sm leading-relaxed text-text-muted-light dark:text-text-muted-dark">{lesson.summary}</p>}
           <div class="chapter-meta mt-3 mb-5 ml-12"><span aria-label={`Tempo estimado de leitura: ${lesson.reading_minutes ?? 10} minutos`}><span aria-hidden="true">◷</span> {lesson.reading_minutes ?? 10} min de leitura</span>{formatChapterDate(lesson.created_at) && <span>Criado em {formatChapterDate(lesson.created_at)}</span>}{formatChapterDate(lesson.updated_at) && <span>Atualizado em {formatChapterDate(lesson.updated_at)}</span>}</div>
+          {isAdmin && <aside class="chapter-access-key" aria-label="Palavra-chave para liberar este capítulo aos alunos"><span class="chapter-access-key-label">Palavra-chave do aluno</span>{lessonKeywords.has(lesson.slug) ? <><strong class="chapter-access-key-emojis" aria-label={lessonKeywords.get(lesson.slug)?.split('-').map(fruitNameForEmoji).join(', ')}>{lessonKeywords.get(lesson.slug)}</strong><span class="chapter-access-key-names">{lessonKeywords.get(lesson.slug)?.split('-').map(fruitNameForEmoji).join(' · ')}</span></> : <span class="chapter-access-key-missing">Nenhuma palavra-chave cadastrada</span>}</aside>}
           <div class="chapter-tabs" role="tablist" aria-label={`Conteúdo de ${lesson.title}`}><button type="button" id={`${lesson.slug}-theory-tab`} role="tab" aria-selected="true" aria-controls={`${lesson.slug}-theory`} data-chapter-tab="theory">Teoria</button><button type="button" id={`${lesson.slug}-practice-tab`} role="tab" aria-selected="false" aria-controls={`${lesson.slug}-practice`} data-chapter-tab="practice">Guia de bancada</button></div>
           <button type="button" class="download-chapter-pdf" data-download-chapter title="Na janela de impressão, escolha Salvar como PDF."><span aria-hidden="true">⇩</span> Salvar capítulo em PDF</button>
           <section id={`${lesson.slug}-theory`} role="tabpanel" aria-labelledby={`${lesson.slug}-theory-tab`} data-chapter-panel="theory">
@@ -673,6 +683,13 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
   :global(.dark) .practice-empty p { color:var(--color-text-muted-dark); }
   .chapter-title-row { display:grid; grid-template-columns:34px minmax(0,1fr); gap:12px; align-items:start; }
   .chapter-title-row > span { font-family:'Exo 2',sans-serif; font-size:1.1rem; font-weight:700; color:var(--color-accent-light); }
+  .chapter-access-key { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:3px 14px; margin:0 0 20px 46px; border:1px solid color-mix(in srgb,var(--color-accent-light) 28%,var(--color-border-light)); border-radius:12px; background:color-mix(in srgb,var(--color-accent-light) 6%,var(--color-surface-light)); padding:11px 14px; }
+  .chapter-access-key-label { color:var(--color-text-muted-light); font-size:9px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; }
+  .chapter-access-key-emojis { grid-column:2; grid-row:1 / span 2; font-size:1.55rem; letter-spacing:.12em; white-space:nowrap; }
+  .chapter-access-key-names,.chapter-access-key-missing { color:var(--color-text-main-light); font-size:12px; font-weight:600; }
+  :global(.dark) .chapter-access-key { border-color:color-mix(in srgb,var(--color-accent-dark) 32%,var(--color-border-dark)); background:color-mix(in srgb,var(--color-accent-dark) 8%,var(--color-surface-dark)); }
+  :global(.dark) .chapter-access-key-label { color:var(--color-text-muted-dark); }
+  :global(.dark) .chapter-access-key-names,:global(.dark) .chapter-access-key-missing { color:var(--color-text-main-dark); }
   .chapter-meta { display:flex; flex-wrap:wrap; align-items:center; gap:6px 16px; color:var(--color-text-muted-light); font-size:11px; line-height:1.5; }
   .chapter-meta > span { display:inline-flex; align-items:center; gap:5px; }
   .chapter-meta > span:first-child > span { font-size:14px; }
@@ -769,6 +786,7 @@ const chapterAccessNotice = Astro.url.searchParams.has('capitulo-bloqueado');
     .learning-outcomes { grid-template-columns:1fr; }
     .chapter-article { padding:20px 0 24px; }
     .chapter-title-row { grid-template-columns:28px minmax(0,1fr); gap:9px; }
+    .chapter-access-key { margin-left:37px; }
     .chapter-tabs { gap:16px; }
     .reader-right { margin-top:8px; }
     .note-editor { min-height:120px; }
