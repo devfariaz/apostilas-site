@@ -3,12 +3,14 @@
 1. Abra o projeto no painel do Supabase e entre em **SQL Editor**.
 2. Copie o conteúdo de `schema.sql`, execute-o uma vez e confirme que terminou sem erros.
 3. Em **Authentication → URL Configuration**, adicione `http://localhost:4321/auth/callback` às URLs de redirecionamento. Em produção, adicione também a URL do domínio publicado com `/auth/callback`.
-4. A conta `deivid.farias@docente.fieb.edu.br` recebe `role = 'admin'` pelo gatilho de cadastro. O SQL também cria o perfil como administrador se essa conta já existir no Auth.
-5. Inicie sessão nesse e-mail e acesse `/admin` para cadastrar disciplinas, módulos e capítulos.
+4. Cadastre a conta do professor no site e execute `bootstrap-admin.sql`, substituindo o e-mail de exemplo pelo e-mail usado no cadastro. Confirme que retornou somente o perfil correto como administrador ativo.
+5. Inicie sessão com essa conta e acesse `/admin` para cadastrar disciplinas, módulos e capítulos.
 
 O script cria sete disciplinas iniciais. O painel permite cadastrar outras disciplinas e organizar módulos e capítulos. Contas com e-mail começando por `rm` são ativadas automaticamente; outras começam inativas. O conteúdo, as notas, o progresso e as disciplinas atribuídas são protegidos por RLS.
 
 Para um banco já instalado, execute `upgrade-access-and-chapter-layout.sql` no SQL Editor. Esse arquivo adiciona a alocação de disciplinas por aluno e os campos usados no novo formato dos capítulos.
+
+Se o log do Postgres mostrar `new row violates row-level security policy for table "user_notes"` ao salvar notas, execute `fix-user-notes-rls.sql` no SQL Editor. Ele permite que a conta administradora salve notas nas apostilas e mantém os alunos limitados às disciplinas atribuídas às próprias contas.
 
 Na guia **Aprovações e disciplinas** do painel, o ano selecionado atribui as disciplinas daquele ano e de todos os anteriores. A sugestão usa `disciplines.year_level`; a edição individual continua permitindo personalizar as disciplinas. Também é possível atribuir contas como **ex-aluno**, com acesso a todas as disciplinas ativas e sem exigir palavras-chave. Para instalações existentes ou novas, execute `student-alumni-access.sql` depois do esquema e das atualizações anteriores. A ação em massa só altera contas já cadastradas; e-mails não encontrados são listados.
 

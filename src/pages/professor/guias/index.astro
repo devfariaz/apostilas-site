@@ -1,4 +1,5 @@
 ---
+import { siteTitle, teacherName } from '../../../lib/site';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { createSupabaseServerClient } from '../../../lib/supabase';
 
@@ -26,7 +27,7 @@ const guideCards = (disciplineResult.data ?? []).map((discipline) => {
 }).filter((discipline) => discipline.guides.length > 0);
 ---
 
-<BaseLayout title="Guias do professor — Professor Deivid Nobre - Apostilas" description="Biblioteca privada de guias e materiais do professor." user={user}>
+<BaseLayout title={`Guias do professor — ${siteTitle}`} description="Biblioteca privada de guias e materiais do professor." user={user}>
   <main class="teacher-hub">
     {isAdmin && <a href="/admin" class="teacher-hub-back">← Painel administrativo</a>}
     <header class="teacher-hub-header">

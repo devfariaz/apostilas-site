@@ -13,9 +13,8 @@ alter table public.profiles add column if not exists updated_at timestamptz not 
 update public.profiles p
 set email = u.email,
     full_name = coalesce(p.full_name, u.raw_user_meta_data ->> 'full_name'),
-    role = case when lower(u.email) = 'deivid.farias@docente.fieb.edu.br' then 'admin' else coalesce(p.role, 'aluno') end,
-    is_active = coalesce(p.is_active, false) or lower(coalesce(u.email, '')) like 'rm%'
-      or lower(coalesce(u.email, '')) = 'deivid.farias@docente.fieb.edu.br',
+    role = coalesce(p.role, 'aluno'),
+    is_active = coalesce(p.is_active, false) or lower(coalesce(u.email, '')) like 'rm%',
     updated_at = timezone('utc'::text, now())
 from auth.users u
 where p.id = u.id;
@@ -43,20 +42,18 @@ set search_path = ''
 as $$
 declare
   normalized_email text := pg_catalog.lower(coalesce(new.email, ''));
-  is_owner boolean := pg_catalog.lower(coalesce(new.email, '')) = 'deivid.farias@docente.fieb.edu.br';
 begin
   insert into public.profiles as current_profile (id, email, full_name, role, is_active)
   values (
     new.id,
     new.email,
     new.raw_user_meta_data ->> 'full_name',
-    case when is_owner then 'admin' else 'aluno' end,
-    normalized_email like 'rm%' or is_owner
+    'aluno',
+    normalized_email like 'rm%'
   )
   on conflict (id) do update set
     email = excluded.email,
     full_name = coalesce(excluded.full_name, current_profile.full_name),
-    role = case when pg_catalog.lower(excluded.email) = 'deivid.farias@docente.fieb.edu.br' then 'admin' else current_profile.role end,
     is_active = current_profile.is_active or excluded.is_active,
     updated_at = pg_catalog.timezone('utc'::text, pg_catalog.now());
   return new;

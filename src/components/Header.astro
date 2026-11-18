@@ -2,6 +2,7 @@
 import ThemeToggle from './ThemeToggle.astro';
 import LogoMark from './LogoMark.astro';
 import { disciplines } from '../lib/catalog';
+import { teacherName, siteTitle } from '../lib/site';
 import { createSupabaseServerClient } from '../lib/supabase';
 const { user } = Astro.props;
 const displayName = user?.user_metadata?.full_name || user?.email || 'Conta';
@@ -38,7 +39,7 @@ const yearGroups = [
     <button id="mobile-menu-toggle" class="mobile-menu-toggle grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border-light text-text-main-light transition hover:bg-black/5 lg:hidden dark:border-border-dark dark:text-text-main-dark dark:hover:bg-white/10" type="button" aria-label="Abrir menu de disciplinas" aria-controls="mobile-year-nav" aria-expanded="false">
       <span class="hamburger-icon" aria-hidden="true"><i></i><i></i><i></i></span>
     </button>
-    <a href="/" class="brand-link flex shrink-0 items-center gap-2 font-display tracking-tight" aria-label="Professor Deivid Nobre - Apostilas"><span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-light"><LogoMark class="h-9 w-9 text-white" /></span><span class="brand-name flex flex-col text-sm font-bold leading-tight sm:text-base">Professor Deivid Nobre<span class="text-xs font-medium text-text-muted-light dark:text-text-muted-dark">Apostilas</span></span></a>
+    <a href="/" class="brand-link flex shrink-0 items-center gap-2 font-display tracking-tight" aria-label={siteTitle}><span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-light"><LogoMark class="h-9 w-9 text-white" /></span><span class="brand-name flex flex-col text-sm font-bold leading-tight sm:text-base">{teacherName}<span class="text-xs font-medium text-text-muted-light dark:text-text-muted-dark">Apostilas</span></span></a>
     <nav class="year-nav desktop-year-nav hidden min-w-0 flex-1 items-center gap-1 text-sm text-text-muted-light lg:flex dark:text-text-muted-dark" aria-label="Disciplinas por ano">
       {yearGroups.map((group) => group.subjects.length > 0 && <details class="year-nav-group relative">
         <summary class="flex cursor-pointer list-none items-center gap-2 rounded-full px-3 py-2 font-semibold transition hover:bg-black/5 hover:text-accent-light dark:hover:bg-white/10">{group.label}<span class="year-nav-chevron" aria-hidden="true">⌄</span></summary>

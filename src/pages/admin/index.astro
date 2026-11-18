@@ -1,11 +1,12 @@
 ---
+import { siteTitle, teacherName } from '../../lib/site';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { createSupabaseServerClient } from '../../lib/supabase';
 export const prerender = false;
 const supabase = createSupabaseServerClient(Astro.cookies, Astro.request);
 const { data: { user } } = await supabase.auth.getUser();
 ---
-<BaseLayout title="Painel administrativo — Professor Deivid Nobre - Apostilas" user={user}>
+<BaseLayout title={`Painel administrativo — ${siteTitle}`} user={user}>
   <main class="mx-auto max-w-7xl px-5 py-10 lg:px-8">
     <p class="text-xs font-bold uppercase tracking-[.2em] text-accent-light">Gestão de conteúdo</p><h1 class="mt-2 font-display text-4xl font-semibold">Painel administrativo</h1><p class="mt-3 text-text-muted-light dark:text-text-muted-dark">Cadastre disciplinas, organize módulos e publique capítulos da apostila.</p>
     <nav class="admin-tabs mt-8" role="tablist" aria-label="Seções administrativas">

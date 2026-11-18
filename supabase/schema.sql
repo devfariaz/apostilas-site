@@ -119,7 +119,7 @@ update public.apostilas set shortcuts = jsonb_build_array(jsonb_build_object('ke
 where shortcut_keys <> '' and shortcuts = '[]'::jsonb;
 create index if not exists apostilas_tags_gin_idx on public.apostilas using gin(tags);
 
--- Criação automática do perfil. Contas RM e o e-mail do proprietário são ativados.
+-- Criação automática do perfil. O primeiro administrador é definido na instalação.
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -128,20 +128,18 @@ set search_path = ''
 as $$
 declare
   email_lower text := lower(coalesce(new.email, ''));
-  is_owner boolean := lower(coalesce(new.email, '')) = 'deivid.farias@docente.fieb.edu.br';
 begin
   insert into public.profiles (id, email, full_name, role, is_active)
   values (
     new.id,
     new.email,
     new.raw_user_meta_data ->> 'full_name',
-    case when is_owner then 'admin' else 'aluno' end,
-    email_lower like 'rm%' or is_owner
+    'aluno',
+    email_lower like 'rm%'
   )
   on conflict (id) do update set
     email = excluded.email,
     full_name = coalesce(excluded.full_name, public.profiles.full_name),
-    role = case when lower(excluded.email) = 'deivid.farias@docente.fieb.edu.br' then 'admin' else public.profiles.role end,
     is_active = public.profiles.is_active or excluded.is_active,
     updated_at = timezone('utc'::text, now());
   return new;
@@ -159,14 +157,13 @@ select
   u.id,
   u.email,
   u.raw_user_meta_data ->> 'full_name',
-  case when lower(u.email) = 'deivid.farias@docente.fieb.edu.br' then 'admin' else 'aluno' end,
-  lower(u.email) like 'rm%' or lower(u.email) = 'deivid.farias@docente.fieb.edu.br'
+  'aluno',
+  lower(u.email) like 'rm%'
 from auth.users u
 where u.email is not null
 on conflict (id) do update set
   email = excluded.email,
   is_active = public.profiles.is_active or excluded.is_active,
-  role = case when lower(excluded.email) = 'deivid.farias@docente.fieb.edu.br' then 'admin' else public.profiles.role end,
   updated_at = timezone('utc'::text, now());
 
 alter table public.profiles enable row level security;
@@ -217,11 +214,13 @@ create policy "Admins manage apostilas" on public.apostilas for all
   with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_active and p.role = 'admin'));
 
 drop policy if exists "Users manage own notes" on public.user_notes;
-create policy "Users manage own notes" on public.user_notes for all
+create policy "Users manage own notes" on public.user_notes for all to authenticated
   using (auth.uid() = user_id and exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_active)
-    and exists (select 1 from public.student_disciplines sd where sd.user_id = auth.uid() and sd.discipline_slug = user_notes.disciplina_slug))
+    and (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_active and p.role = 'admin')
+      or exists (select 1 from public.student_disciplines sd where sd.user_id = auth.uid() and sd.discipline_slug = user_notes.disciplina_slug)))
   with check (auth.uid() = user_id and exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_active)
-    and exists (select 1 from public.student_disciplines sd where sd.user_id = auth.uid() and sd.discipline_slug = user_notes.disciplina_slug));
+    and (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_active and p.role = 'admin')
+      or exists (select 1 from public.student_disciplines sd where sd.user_id = auth.uid() and sd.discipline_slug = user_notes.disciplina_slug)));
 drop policy if exists "Users manage own progress" on public.lesson_progress;
 create policy "Users manage own progress" on public.lesson_progress for all
   using (auth.uid() = user_id and exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_active)

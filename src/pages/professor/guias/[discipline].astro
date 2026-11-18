@@ -1,4 +1,5 @@
 ---
+import { siteTitle, teacherName } from '../../../lib/site';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { createSupabaseServerClient } from '../../../lib/supabase';
 import { marked } from 'marked';
@@ -53,7 +54,7 @@ const loadError = Boolean(disciplineResult.error || guideResult.error || chapter
 const chapterHref = (guideId: string, chapterSlug: string) => `/professor/guias/${encodeURIComponent(disciplineSlug)}?guia=${encodeURIComponent(guideId)}&capitulo=${encodeURIComponent(chapterSlug)}`;
 ---
 
-<BaseLayout title={`${discipline?.name ?? 'Guias do professor'} — Professor Deivid Nobre - Apostilas`} description={`Guias do professor de ${discipline?.name ?? 'uma disciplina'}.`} user={user}>
+<BaseLayout title={`${discipline?.name ?? 'Guias do professor'} — ${siteTitle}`} description={`Guias do professor de ${discipline?.name ?? 'uma disciplina'}.`} user={user}>
   <div class="teacher-reader">
     <aside class="teacher-reader-left">
       <div class="teacher-reader-left-inner">

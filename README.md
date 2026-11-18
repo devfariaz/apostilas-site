@@ -1,7 +1,7 @@
-# Professor Deivid - Apostilas | Planeamento e Especificação Técnica
+# Apostilas | Plataforma de materiais didáticos
 
 ## 1. Visão Geral do Projeto
-A plataforma **Professor Deivid - Apostilas** é um ambiente de leitura e consulta didática voltado para artes visuais e design gráfico. O objetivo é substituir materiais tradicionais em PDF por uma interface web minimalista, fluida e com organização editorial baseada nas referências visuais fornecidas.
+A plataforma de apostilas é um ambiente de leitura e consulta didática. Cada publicação pode usar seu próprio projeto Supabase e configurar o nome do professor sem alterar o código.
 
 A plataforma foi concebida para acomodar **7 disciplinas académicas**, separando de forma clara a entrega de conteúdo pedagógico curado em MDX das funcionalidades dinâmicas individuais do aluno (autenticação, controlo de leitura e bloco de notas persistente).
 
@@ -23,6 +23,7 @@ O projeto já usa `@astrojs/vercel` com saída `server`; o build gera as funçõ
 3. Cadastre estas variáveis nos ambientes Production, Preview e Development da Vercel:
    - `PUBLIC_SUPABASE_URL`
    - `PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+   - `PUBLIC_TEACHER_NAME` (por exemplo, `Professora Ana Silva`; se omitida, mantém o nome padrão desta instalação)
 4. Depois do primeiro deploy, em Supabase → Authentication → URL Configuration, defina a URL principal como o domínio de produção e permita os retornos de autenticação:
    - `https://SEU-DOMINIO/auth/callback`
    - `https://*-SEU-SLUG.vercel.app/**` para previews
@@ -31,6 +32,16 @@ O projeto já usa `@astrojs/vercel` com saída `server`; o build gera as funçõ
 O arquivo `.env.example` contém apenas os nomes das variáveis. Nunca envie `.env` para o repositório. A URL de callback de cadastro usa o domínio atual automaticamente.
 
 Referências: [implantação Astro na Vercel](https://docs.astro.build/en/guides/deploy/vercel/) e [URLs de redirecionamento do Supabase Auth](https://supabase.com/docs/guides/auth/redirect-urls).
+
+### Preparar uma instalação para outro professor
+
+1. Publique este repositório em um projeto Vercel separado e crie um projeto Supabase separado para o professor.
+2. No Supabase, execute `supabase/schema.sql` no SQL Editor.
+3. Na Vercel, configure `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_PUBLISHABLE_KEY` e `PUBLIC_TEACHER_NAME` para essa instalação e faça o deploy.
+4. Crie a conta do professor no site publicado. No SQL Editor desse Supabase, execute `supabase/bootstrap-admin.sql` após substituir `PROFESSOR_EMAIL_AQUI` pelo e-mail cadastrado. Confirme que a consulta retornou exatamente o perfil esperado com `role = admin` e `is_active = true`.
+5. O professor entra no painel `/admin` e configura as disciplinas, alunos e conteúdos.
+
+Cada instalação deve usar um banco Supabase próprio. Não reutilize as credenciais do banco do site atual. Ao publicar o código novo no projeto Vercel existente, mantenha as variáveis atuais; o valor padrão do nome preserva a identidade atual.
 
 ---
 

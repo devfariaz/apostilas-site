@@ -1,4 +1,5 @@
 ---
+import { siteTitle, teacherName } from '../lib/site';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { createSupabaseServerClient } from '../lib/supabase';
 export const prerender = false;
@@ -26,7 +27,7 @@ try {
   }
 } catch { /* A busca oferece instrução de acesso quando o banco ainda não está configurado. */ }
 ---
-<BaseLayout title="Buscar — Professor Deivid Nobre - Apostilas" description="Pesquise capítulos por assunto e tags." user={user}>
+<BaseLayout title={`Buscar — ${siteTitle}`} description="Pesquise capítulos por assunto e tags." user={user}>
   <main class="mx-auto max-w-5xl px-5 py-12 lg:px-8">
     <p class="text-xs font-bold uppercase tracking-[.2em] text-accent-light">Biblioteca de estudos</p>
     <h1 class="mt-3 font-display text-4xl font-semibold md:text-5xl">Encontre um assunto</h1>
