@@ -1,12 +1,15 @@
 # Configurar o banco de dados
 
 1. Abra o projeto no painel do Supabase e entre em **SQL Editor**.
-2. Copie o conteúdo de `schema.sql`, execute-o uma vez e confirme que terminou sem erros.
-3. Em **Authentication → URL Configuration**, adicione `http://localhost:4321/auth/callback` às URLs de redirecionamento. Em produção, adicione também a URL do domínio publicado com `/auth/callback`.
-4. Cadastre a conta do professor no site e execute `bootstrap-admin.sql`, substituindo o e-mail de exemplo pelo e-mail usado no cadastro. Confirme que retornou somente o perfil correto como administrador ativo.
-5. Inicie sessão com essa conta e acesse `/admin` para cadastrar disciplinas, módulos e capítulos.
+2. Copie o conteúdo de `schema.sql`, execute-o uma vez e confirme que terminou sem erros. Esse arquivo cria a estrutura do banco, sem comandos de inserção ou atualização de dados.
+3. Copie o conteúdo de `functions.sql`, execute-o depois do schema e confirme que terminou sem erros. Esse arquivo instala os gatilhos e funções usados pelo cadastro, administração e atribuição de disciplinas.
+4. Em **Authentication → URL Configuration**, adicione `http://localhost:4321/auth/callback` às URLs de redirecionamento. Em produção, adicione também a URL do domínio publicado com `/auth/callback`.
+5. Cadastre a conta do professor no site e execute `bootstrap-admin.sql`, substituindo o e-mail de exemplo pelo e-mail usado no cadastro. Confirme que retornou somente o perfil correto como administrador ativo.
+6. Inicie sessão com essa conta e acesse `/admin` para cadastrar disciplinas, módulos e capítulos.
 
-O script cria sete disciplinas iniciais. O painel permite cadastrar outras disciplinas e organizar módulos e capítulos. Contas com e-mail começando por `rm` são ativadas automaticamente; outras começam inativas. O conteúdo, as notas, o progresso e as disciplinas atribuídas são protegidos por RLS.
+O painel permite cadastrar disciplinas, módulos e capítulos. Contas com e-mail começando por `rm` são ativadas automaticamente; outras começam inativas. O conteúdo, as notas, o progresso e as disciplinas atribuídas são protegidos por RLS.
+
+Se o banco já tinha usuários no Supabase Auth antes de instalar o gatilho de cadastro, execute `backfill-existing-data.sql` depois de `schema.sql` e `functions.sql` para criar os perfis que faltam e converter atalhos antigos. Não é necessário em um projeto Supabase novo. Os comandos que inserem ou atualizam dados durante o uso estão em `functions.sql`, separados da estrutura declarativa.
 
 Para um banco já instalado, execute `upgrade-access-and-chapter-layout.sql` no SQL Editor. Esse arquivo adiciona a alocação de disciplinas por aluno e os campos usados no novo formato dos capítulos.
 

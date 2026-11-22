@@ -36,7 +36,7 @@ Referências: [implantação Astro na Vercel](https://docs.astro.build/en/guides
 ### Preparar uma instalação para outro professor
 
 1. Publique este repositório em um projeto Vercel separado e crie um projeto Supabase separado para o professor.
-2. No Supabase, execute `supabase/schema.sql` no SQL Editor.
+2. No Supabase, execute `supabase/schema.sql` e depois `supabase/functions.sql` no SQL Editor. O primeiro arquivo cria somente a estrutura, sem comandos de inserção ou atualização de dados; o segundo instala os gatilhos e funções da aplicação. O professor poderá cadastrar as disciplinas no painel `/admin` depois de se tornar administrador.
 3. Na Vercel, configure `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_PUBLISHABLE_KEY` e `PUBLIC_TEACHER_NAME` para essa instalação e faça o deploy.
 4. Crie a conta do professor no site publicado. No SQL Editor desse Supabase, execute `supabase/bootstrap-admin.sql` após substituir `PROFESSOR_EMAIL_AQUI` pelo e-mail cadastrado. Confirme que a consulta retornou exatamente o perfil esperado com `role = admin` e `is_active = true`.
 5. O professor entra no painel `/admin` e configura as disciplinas, alunos e conteúdos.
