@@ -74,9 +74,10 @@ const { data: { user } } = await supabase.auth.getUser();
     </section>
     <section id="panel-users" class="admin-panel max-w-5xl rounded-3xl border border-border-light bg-surface-light p-6 dark:border-border-dark dark:bg-surface-dark" role="tabpanel" aria-labelledby="tab-users" tabindex="0" hidden>
       <p class="text-xs font-bold uppercase tracking-[.18em] text-accent-light">Contas do site</p><h2 class="mt-1 font-display text-2xl font-semibold">Todos os usuários</h2>
-      <p class="mt-2 text-sm text-text-muted-light dark:text-text-muted-dark">Consulte alunos, professores eventuais e administradores e defina uma nova senha para uma conta.</p>
+      <p class="mt-2 text-sm text-text-muted-light dark:text-text-muted-dark">Consulte as contas, altere o nome cadastrado e defina uma nova senha.</p>
       <input id="users-search" class="admin-input mt-4" placeholder="Buscar por nome ou e-mail…" aria-label="Buscar usuários" />
       <p id="users-status" class="mt-3 text-sm" aria-live="polite"></p><div id="users-list" class="mt-4 grid gap-3 md:grid-cols-2"></div>
+      <dialog id="user-name-dialog" class="admin-dialog"><div class="admin-dialog-head"><div><p class="text-xs font-bold uppercase tracking-widest text-accent-light">Dados da conta</p><h3 class="mt-1 font-display text-2xl font-semibold">Alterar nome</h3><p id="user-name-email" class="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark"></p></div><button type="button" class="admin-close" data-close-dialog aria-label="Fechar">✕</button></div><label class="mt-5 block text-sm font-semibold">Nome completo<input id="user-new-name" type="text" maxlength="120" autocomplete="name" class="admin-input" /></label><div class="mt-5 flex justify-end gap-2"><button type="button" class="admin-secondary" data-close-dialog>Cancelar</button><button type="button" id="user-name-save" class="admin-primary">Salvar nome</button></div></dialog>
       <dialog id="user-password-dialog" class="admin-dialog"><div class="admin-dialog-head"><div><p class="text-xs font-bold uppercase tracking-widest text-accent-light">Acesso da conta</p><h3 class="mt-1 font-display text-2xl font-semibold">Definir nova senha</h3><p id="user-password-email" class="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark"></p></div><button type="button" class="admin-close" data-close-dialog aria-label="Fechar">✕</button></div><label class="mt-5 block text-sm font-semibold">Nova senha<input id="user-new-password" type="password" minlength="8" maxlength="128" autocomplete="new-password" class="admin-input" /></label><p class="mt-2 text-xs text-text-muted-light dark:text-text-muted-dark">A senha será alterada imediatamente. Compartilhe a nova senha com o usuário por um canal seguro.</p><div class="mt-5 flex justify-end gap-2"><button type="button" class="admin-secondary" data-close-dialog>Cancelar</button><button type="button" id="user-password-save" class="admin-primary">Salvar nova senha</button></div></dialog>
     </section>
   </main>
@@ -239,7 +240,7 @@ const { data: { user } } = await supabase.auth.getUser();
   });
   if (savedTab?.id === 'tab-users') void loadUsers();
   const disciplines: Row[] = []; const modules: Row[] = []; const lessons: Row[] = []; const lessonKeywords = new Map<string, string>(); let keywordSearch = ''; let keywordDisciplineFilter = 'all'; let keywordModuleFilter = 'all'; let keywordStatusFilter = 'all'; const students: Row[] = []; const teacherGuides: Row[] = []; const teacherGuideChapters: Row[] = []; let selectedTeacherGuideId = ''; let selectedTeacherChapterId = 'all'; let availableDisciplines: Row[] = []; let studentFilter = 'all'; let disciplineSearch = ''; let moduleSearch = ''; let moduleDisciplineFilter = 'all'; let lessonSearch = ''; let lessonDisciplineFilter = 'all'; let lessonModuleFilter = 'all'; let lessonStatusFilter = 'all'; let studentSearch = ''; let editingStudent: Row | null = null; const selectedStudentIds = new Set<string>(); const selectedLessonIds = new Set<string>();
-  const allUsers: Row[] = []; let selectedPasswordUser: Row | null = null;
+  const allUsers: Row[] = []; let selectedPasswordUser: Row | null = null; let selectedNameUser: Row | null = null;
   const slugify = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   async function api(path: string, method = 'GET', body?: unknown) {
     const response = await fetch(path, { method, headers: body ? { 'content-type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined });
@@ -258,8 +259,10 @@ const { data: { user } } = await supabase.auth.getUser();
       const info = document.createElement('div'); info.className = 'min-w-0 flex-1';
       const name = document.createElement('strong'); name.className = 'block truncate text-sm'; name.textContent = user.full_name || user.email;
       const meta = document.createElement('small'); meta.className = 'mt-1 block text-xs text-text-muted-light dark:text-text-muted-dark'; meta.textContent = `${user.email} · ${user.role === 'admin' ? 'Administrador' : 'Aluno'}${user.role === 'aluno' ? ` · ${user.is_active ? 'ativo' : 'inativo'}` : ''}`;
-      info.append(name, meta); const passwordButton = actionButton('Definir senha', () => { selectedPasswordUser = user; $('#user-password-email').textContent = user.email; ($('#user-new-password') as HTMLInputElement).value = ''; $('#user-password-dialog').showModal(); });
-      card.append(info, passwordButton); list.append(card);
+      info.append(name, meta); const actions = document.createElement('div'); actions.className = 'flex flex-wrap gap-2';
+      const editNameButton = actionButton('Alterar nome', () => { selectedNameUser = user; $('#user-name-email').textContent = user.email; ($('#user-new-name') as HTMLInputElement).value = user.full_name ?? ''; $('#user-name-dialog').showModal(); });
+      const passwordButton = actionButton('Definir senha', () => { selectedPasswordUser = user; $('#user-password-email').textContent = user.email; ($('#user-new-password') as HTMLInputElement).value = ''; $('#user-password-dialog').showModal(); });
+      actions.append(editNameButton, passwordButton); card.append(info, actions); list.append(card);
     });
     if (!visible.length) { const empty = document.createElement('p'); empty.className = 'text-sm text-text-muted-light dark:text-text-muted-dark'; empty.textContent = allUsers.length ? 'Nenhum usuário corresponde à busca.' : 'Nenhum usuário encontrado.'; list.append(empty); }
   }
@@ -633,6 +636,19 @@ const { data: { user } } = await supabase.auth.getUser();
   $('#student-edit-alumni').addEventListener('change', (event) => { const alumni = (event.currentTarget as HTMLInputElement).checked; ($('#student-edit-year') as HTMLSelectElement).disabled = alumni; });
   $('#student-edit-save').addEventListener('click', async () => { if (!editingStudent) return; const button = $('#student-edit-save') as HTMLButtonElement; const year = ($('#student-edit-year') as HTMLSelectElement).value; const isAlumni = ($('#student-edit-alumni') as HTMLInputElement).checked; const discipline_slugs = [...$('#student-edit-disciplines').querySelectorAll<HTMLInputElement>('input:checked')].map((input) => input.value); button.disabled = true; button.textContent = 'Salvando…'; try { await api('/api/admin/students', 'PUT', { id: editingStudent.id, is_alumni: isAlumni, year_level: isAlumni || !year ? null : Number(year), discipline_slugs }); $('#student-edit-dialog').close(); await load(); } catch (error) { alert(error instanceof Error ? error.message : 'Não foi possível salvar o vínculo.'); } finally { button.disabled = false; button.textContent = 'Salvar vínculo'; } });
   $('#users-search').addEventListener('input', renderUsers);
+  $('#user-name-save').addEventListener('click', async () => {
+    if (!selectedNameUser) return;
+    const full_name = ($('#user-new-name') as HTMLInputElement).value.trim();
+    const button = $('#user-name-save') as HTMLButtonElement;
+    if (!full_name || full_name.length > 120) { setStatus('#users-status', 'Informe um nome entre 1 e 120 caracteres.', true); return; }
+    button.disabled = true; button.textContent = 'Salvando…';
+    try {
+      await api('/api/admin/users', 'PATCH', { id: selectedNameUser.id, full_name });
+      selectedNameUser.full_name = full_name; $('#user-name-dialog').close(); renderUsers();
+      setStatus('#users-status', `Nome atualizado para ${selectedNameUser.email}.`);
+    } catch (error) { setStatus('#users-status', error instanceof Error ? error.message : 'Não foi possível alterar o nome.', true); }
+    finally { button.disabled = false; button.textContent = 'Salvar nome'; }
+  });
   $('#user-password-save').addEventListener('click', async () => {
     if (!selectedPasswordUser) return;
     const password = ($('#user-new-password') as HTMLInputElement).value;

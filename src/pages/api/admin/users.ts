@@ -53,3 +53,19 @@ export const POST: APIRoute = async ({ cookies, request }) => {
   if (error) return Response.json({ error: error.message }, { status: 400 });
   return Response.json({ updated: true });
 };
+
+export const PATCH: APIRoute = async ({ cookies, request }) => {
+  const auth = await requireAdmin(cookies, request);
+  if (!auth.user) return Response.json({ error: auth.error }, { status: auth.status });
+  let body: any; try { body = await request.json(); } catch { return Response.json({ error: 'JSON inválido.' }, { status: 400 }); }
+  const fullName = typeof body.full_name === 'string' ? body.full_name.trim() : '';
+  if (typeof body.id !== 'string' || !body.id || !fullName || fullName.length > 120) {
+    return Response.json({ error: 'Informe o usuário e um nome entre 1 e 120 caracteres.' }, { status: 400 });
+  }
+  const client = adminClient();
+  if (!client) return Response.json({ error: 'Configure SUPABASE_SECRET_KEY no servidor para alterar nomes.' }, { status: 500 });
+  const { data, error } = await client.from('profiles').update({ full_name: fullName, updated_at: new Date().toISOString() }).eq('id', body.id).select('id').maybeSingle();
+  if (error) return Response.json({ error: error.message }, { status: 400 });
+  if (!data) return Response.json({ error: 'Usuário não encontrado.' }, { status: 404 });
+  return Response.json({ updated: true, full_name: fullName });
+};
