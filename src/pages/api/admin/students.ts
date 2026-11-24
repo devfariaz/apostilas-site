@@ -1,6 +1,26 @@
 import type { APIRoute } from 'astro';
 import { requireAdmin } from '../../../lib/admin';
+import { createClient } from '@supabase/supabase-js';
 export const prerender = false;
+
+export const DELETE: APIRoute = async ({ request, cookies }) => {
+  const auth = await requireAdmin(cookies, request); if (!auth.user) return Response.json({ error: auth.error }, { status: auth.status });
+  let body: any; try { body = await request.json(); } catch { return Response.json({ error: 'JSON inválido.' }, { status: 400 }); }
+  if (typeof body.id !== 'string' || !body.id) return Response.json({ error: 'Informe um aluno válido.' }, { status: 400 });
+  if (body.id === auth.user.id) return Response.json({ error: 'Não é possível excluir a própria conta administrativa.' }, { status: 400 });
+
+  const { data: target, error: targetError } = await auth.supabase.from('profiles').select('id,role').eq('id', body.id).maybeSingle();
+  if (targetError) return Response.json({ error: targetError.message }, { status: 500 });
+  if (!target || target.role !== 'aluno') return Response.json({ error: 'Aluno não encontrado.' }, { status: 404 });
+
+  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+  const supabaseKey = import.meta.env.SUPABASE_SECRET_KEY ?? import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !supabaseKey) return Response.json({ error: 'Exclusão não configurada: defina SUPABASE_SECRET_KEY no servidor.' }, { status: 500 });
+  const adminClient = createClient(supabaseUrl, supabaseKey, { auth: { autoRefreshToken: false, persistSession: false } });
+  const { error } = await adminClient.auth.admin.deleteUser(body.id);
+  if (error) return Response.json({ error: error.message }, { status: 400 });
+  return Response.json({ deleted: true });
+};
 
 export const GET: APIRoute = async ({ cookies, request }) => {
   const auth = await requireAdmin(cookies, request); if (!auth.user) return Response.json({ error: auth.error }, { status: auth.status });

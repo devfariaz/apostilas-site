@@ -21,6 +21,8 @@ No cadastro de capítulos, **Aula** e **Prática guiada** aceitam Markdown. Cada
 
 O aplicativo usa a chave publicável do Supabase no `.env`; ela não permite criar tabelas. A execução inicial do SQL precisa ser feita no SQL Editor do projeto Supabase.
 
+Para listar todas as contas na guia **Usuários**, definir senhas pelo painel e excluir contas de alunos, configure no servidor `SUPABASE_SECRET_KEY` (ou `SUPABASE_SERVICE_ROLE_KEY`). Essa chave privilegiada nunca deve usar o prefixo `PUBLIC_` nem ser exposta ao navegador.
+
 Se o cadastro retornar `Database error saving new user` porque `profiles` já existia com colunas diferentes, execute `fix-auth-trigger.sql` no SQL Editor e tente cadastrar novamente.
 
 
