@@ -13,16 +13,28 @@ function adminClient() {
 export const GET: APIRoute = async ({ cookies, request }) => {
   const auth = await requireAdmin(cookies, request);
   if (!auth.user) return Response.json({ error: auth.error }, { status: auth.status });
-  const [{ data: students, error: studentsError }, { data: administrators, error: administratorsError }] = await Promise.all([
+  const [studentResult, administratorResult] = await Promise.all([
     auth.supabase.rpc('admin_list_students'),
     auth.supabase.rpc('admin_list_administrators')
   ]);
-  if (studentsError || administratorsError) {
-    return Response.json({ error: studentsError?.message ?? administratorsError?.message }, { status: 500 });
+  if (studentResult.error || administratorResult.error) {
+    const client = adminClient();
+    if (client) {
+      const { data: profiles, error } = await client.from('profiles').select('id,email,full_name,role,is_active,created_at').order('created_at', { ascending: false });
+      if (!error) return Response.json({ users: profiles ?? [] });
+    }
+    const availableUsers = [
+      ...(studentResult.data ?? []).map((student: Record<string, any>) => ({ ...student, role: 'aluno' })),
+      ...(administratorResult.data ?? []).map((administrator: Record<string, any>) => ({ ...administrator, role: 'admin' }))
+    ];
+    if (availableUsers.length) {
+      return Response.json({ users: availableUsers, warning: 'A lista está incompleta: uma das funções de usuários não está disponível no banco.' });
+    }
+    return Response.json({ error: 'Não foi possível listar os usuários. Verifique as funções admin_list_students e admin_list_administrators no Supabase e configure SUPABASE_SECRET_KEY para a consulta de contingência.' }, { status: 500 });
   }
   const users = [
-    ...(students ?? []).map((student: Record<string, any>) => ({ ...student, role: 'aluno' })),
-    ...(administrators ?? []).map((administrator: Record<string, any>) => ({ ...administrator, role: 'admin' }))
+    ...(studentResult.data ?? []).map((student: Record<string, any>) => ({ ...student, role: 'aluno' })),
+    ...(administratorResult.data ?? []).map((administrator: Record<string, any>) => ({ ...administrator, role: 'admin' }))
   ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   return Response.json({ users });
 };

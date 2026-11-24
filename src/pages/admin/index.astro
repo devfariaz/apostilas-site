@@ -237,6 +237,7 @@ const { data: { user } } = await supabase.auth.getUser();
       event.preventDefault(); activateTab(tabs[nextIndex], true);
     });
   });
+  if (savedTab?.id === 'tab-users') void loadUsers();
   const disciplines: Row[] = []; const modules: Row[] = []; const lessons: Row[] = []; const lessonKeywords = new Map<string, string>(); let keywordSearch = ''; let keywordDisciplineFilter = 'all'; let keywordModuleFilter = 'all'; let keywordStatusFilter = 'all'; const students: Row[] = []; const teacherGuides: Row[] = []; const teacherGuideChapters: Row[] = []; let selectedTeacherGuideId = ''; let selectedTeacherChapterId = 'all'; let availableDisciplines: Row[] = []; let studentFilter = 'all'; let disciplineSearch = ''; let moduleSearch = ''; let moduleDisciplineFilter = 'all'; let lessonSearch = ''; let lessonDisciplineFilter = 'all'; let lessonModuleFilter = 'all'; let lessonStatusFilter = 'all'; let studentSearch = ''; let editingStudent: Row | null = null; const selectedStudentIds = new Set<string>(); const selectedLessonIds = new Set<string>();
   const allUsers: Row[] = []; let selectedPasswordUser: Row | null = null;
   const slugify = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -245,7 +246,7 @@ const { data: { user } } = await supabase.auth.getUser();
     const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Não foi possível concluir a operação.'); return data;
   }
   async function loadUsers() {
-    try { const result = await api('/api/admin/users'); allUsers.splice(0, allUsers.length, ...result.users); renderUsers(); $('#users-status').textContent = ''; }
+    try { const result = await api('/api/admin/users'); allUsers.splice(0, allUsers.length, ...result.users); renderUsers(); $('#users-status').textContent = result.warning ?? ''; }
     catch (error) { $('#users-status').textContent = error instanceof Error ? error.message : 'Não foi possível carregar os usuários.'; }
   }
   function renderUsers() {
