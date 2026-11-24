@@ -13,11 +13,18 @@ function adminClient() {
 export const GET: APIRoute = async ({ cookies, request }) => {
   const auth = await requireAdmin(cookies, request);
   if (!auth.user) return Response.json({ error: auth.error }, { status: auth.status });
-  const client = adminClient();
-  if (!client) return Response.json({ error: 'Configure SUPABASE_SECRET_KEY no servidor para listar todos os usuários.' }, { status: 500 });
-  const { data: profiles, error } = await client.from('profiles').select('id,email,full_name,role,is_active,created_at').order('created_at', { ascending: false });
-  if (error) return Response.json({ error: error.message }, { status: 500 });
-  return Response.json({ users: profiles ?? [] });
+  const [{ data: students, error: studentsError }, { data: administrators, error: administratorsError }] = await Promise.all([
+    auth.supabase.rpc('admin_list_students'),
+    auth.supabase.rpc('admin_list_administrators')
+  ]);
+  if (studentsError || administratorsError) {
+    return Response.json({ error: studentsError?.message ?? administratorsError?.message }, { status: 500 });
+  }
+  const users = [
+    ...(students ?? []).map((student: Record<string, any>) => ({ ...student, role: 'aluno' })),
+    ...(administrators ?? []).map((administrator: Record<string, any>) => ({ ...administrator, role: 'admin' }))
+  ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  return Response.json({ users });
 };
 
 export const POST: APIRoute = async ({ cookies, request }) => {

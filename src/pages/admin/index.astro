@@ -256,7 +256,7 @@ const { data: { user } } = await supabase.auth.getUser();
       const card = document.createElement('article'); card.className = 'flex flex-wrap items-center gap-3 rounded-2xl border border-border-light p-4 dark:border-border-dark';
       const info = document.createElement('div'); info.className = 'min-w-0 flex-1';
       const name = document.createElement('strong'); name.className = 'block truncate text-sm'; name.textContent = user.full_name || user.email;
-      const meta = document.createElement('small'); meta.className = 'mt-1 block text-xs text-text-muted-light dark:text-text-muted-dark'; meta.textContent = `${user.email} · ${user.role === 'admin' ? 'Administrador' : 'Aluno'} · ${user.is_active ? 'ativo' : 'inativo'}`;
+      const meta = document.createElement('small'); meta.className = 'mt-1 block text-xs text-text-muted-light dark:text-text-muted-dark'; meta.textContent = `${user.email} · ${user.role === 'admin' ? 'Administrador' : 'Aluno'}${user.role === 'aluno' ? ` · ${user.is_active ? 'ativo' : 'inativo'}` : ''}`;
       info.append(name, meta); const passwordButton = actionButton('Definir senha', () => { selectedPasswordUser = user; $('#user-password-email').textContent = user.email; ($('#user-new-password') as HTMLInputElement).value = ''; $('#user-password-dialog').showModal(); });
       card.append(info, passwordButton); list.append(card);
     });
