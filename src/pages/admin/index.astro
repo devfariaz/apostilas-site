@@ -1,5 +1,5 @@
 ---
-import { siteTitle, teacherName } from '../../lib/site';
+import { siteTitle, teacherName, systemVersion } from '../../lib/site';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { createSupabaseServerClient } from '../../lib/supabase';
 export const prerender = false;
@@ -8,7 +8,7 @@ const { data: { user } } = await supabase.auth.getUser();
 ---
 <BaseLayout title={`Painel administrativo — ${siteTitle}`} user={user}>
   <main class="mx-auto max-w-7xl px-5 py-10 lg:px-8">
-    <p class="text-xs font-bold uppercase tracking-[.2em] text-accent-light">Gestão de conteúdo</p><h1 class="mt-2 font-display text-4xl font-semibold">Painel administrativo</h1><p class="mt-3 text-text-muted-light dark:text-text-muted-dark">Cadastre disciplinas, organize módulos e publique capítulos da apostila.</p>
+    <div class="flex flex-wrap items-end justify-between gap-3"><div><p class="text-xs font-bold uppercase tracking-[.2em] text-accent-light">Gestão de conteúdo</p><h1 class="mt-2 font-display text-4xl font-semibold">Painel administrativo</h1><p class="mt-3 text-text-muted-light dark:text-text-muted-dark">Cadastre disciplinas, organize módulos e publique capítulos da apostila.</p></div><p class="rounded-full border border-border-light px-4 py-2 text-xs font-semibold text-text-muted-light dark:border-border-dark dark:text-text-muted-dark">Versão do sistema <strong class="ml-1 text-accent-light">{systemVersion}</strong></p></div>
     <nav class="admin-tabs mt-8" role="tablist" aria-label="Seções administrativas">
       <button id="tab-disciplines" class="admin-tab" type="button" role="tab" aria-selected="true" aria-controls="panel-disciplines" tabindex="0"><span>01</span>Disciplinas</button>
       <button id="tab-modules" class="admin-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-modules" tabindex="-1"><span>02</span>Módulos</button>
